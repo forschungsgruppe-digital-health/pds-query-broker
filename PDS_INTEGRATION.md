@@ -1,6 +1,6 @@
 # PDS-Integrationsleitfaden
 
-> Version 0.1.0 · 2026-05-01
+> Version 0.2.0 · 2026-05-04
 
 Dieses Dokument beschreibt den sprachagnostischen Implementierungspfad für PDS-Entwickler, die einen Connector für den Query Broker bereitstellen. Es ist unabhängig von Programmiersprache, lokalem Datensystem und Pseudonymisierungsinfrastruktur.
 
@@ -273,9 +273,8 @@ Der Stub erwartet eine Zuordnung von Operationsnamen zu Handler-Funktionen. Der 
 
 ```pseudocode
 handlers = {
-    "GetConditions":  conditionsHandler,
-    "GetLabResults":  labResultsHandler,
-    "GetProjectData": projectDataHandler
+    "GetConditions": conditionsHandler
+    // weitere Handler hier registrieren
 }
 ```
 
@@ -330,13 +329,13 @@ sequenceDiagram
     CAT-->>C: Liste aktiver Operationen
 
     C->>C: Abgleich mit registrierten Handlern
-    Note right of C: GetConditions → Handler ✓<br/>GetLabResults → Handler ✓<br/>GetPathwayStatus → kein Handler ✗
+    Note right of C: GetConditions → Handler ✓<br/>GetNewOp → kein Handler ✗
 
     C->>CAT: GET /MessageDefinition?event-uri={op-urls}
     CAT-->>C: MessageDefinitions für unterstützte Operationen
 
     C->>C: CapabilityStatement generieren
-    Note right of C: supportedMessage:<br/>GetConditionsRequest<br/>GetLabResultsRequest
+    Note right of C: supportedMessage:<br/>GetConditionsRequest
 
     C->>C: GET /metadata bereit
     Note right of C: Connector betriebsbereit

@@ -1,0 +1,18 @@
+{
+  "resourceType": "MessageDefinition",
+  "id": "GetConditionsResponse",
+  "url": "https://querybroker.example.org/fhir/MessageDefinition/GetConditionsResponse",
+  "name": "GetConditionsResponse",
+  "title": "GetConditions — Response",
+  "status": "active",
+  "date": "2026-05-01",
+  "eventUri": "https://querybroker.example.org/fhir/OperationDefinition/GetConditions",
+  "category": "consequence",
+  "focus": [
+    {
+      "code": "Condition",
+      "min": 0,
+      "max": "*"
+    }
+  ]
+}

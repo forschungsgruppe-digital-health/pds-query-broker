@@ -5,10 +5,10 @@ Projekthinweise für Claude Code und Cowork-Sitzungen.
 ## Projektstruktur
 
 ```
-pds-query-broker/
+query-broker/
 ├── docs/ARCHITECTURE.md     ← Arc42 v9.0 Architekturdokumentation
 ├── CONTRIBUTING.md           ← Broker/SDK-Entwicklung, neue Operationen
-├── INTEGRATION.md        ← Sprachagnostischer PDS-Connector-Leitfaden
+├── PDS_INTEGRATION.md        ← Sprachagnostischer PDS-Connector-Leitfaden
 ├── CHANGELOG.md              ← Keep a Changelog 1.1.0
 ├── ig/                       ← FHIR ImplementationGuide Projekt
 │   ├── sushi-config.yaml     ← IG-Konfiguration
@@ -33,27 +33,22 @@ pds-query-broker/
 ## Häufige Aufgaben
 
 ### FHIR IG kompilieren
-
 ```bash
 cd ig && sushi build
 ```
-
 Erwartet: 0 Errors, 0 Warnings.
 
 ### IG Publisher ausführen (erzeugt HTML)
-
 ```bash
 cd ig && ./_updatePublisher.sh && ./_genonce.sh
 ```
 
 ### Docker-Umgebung starten
-
 ```bash
 cd docker && cp .env.example .env && docker compose up -d
 ```
 
 ### AsyncAPI validieren
-
 ```bash
 asyncapi validate specs/pds-connector-base.yaml
 ```

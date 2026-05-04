@@ -1,0 +1,25 @@
+{
+  "resourceType": "MessageDefinition",
+  "id": "GetConditionsRequest",
+  "url": "https://querybroker.example.org/fhir/MessageDefinition/GetConditionsRequest",
+  "name": "GetConditionsRequest",
+  "title": "GetConditions — Request",
+  "status": "active",
+  "date": "2026-05-01",
+  "eventUri": "https://querybroker.example.org/fhir/OperationDefinition/GetConditions",
+  "category": "consequence",
+  "responseRequired": "always",
+  "focus": [
+    {
+      "code": "Parameters",
+      "profile": "https://querybroker.example.org/fhir/StructureDefinition/BrokerRequestParameters",
+      "min": 1,
+      "max": "1"
+    }
+  ],
+  "allowedResponse": [
+    {
+      "message": "https://querybroker.example.org/fhir/MessageDefinition/GetConditionsResponse"
+    }
+  ]
+}

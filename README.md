@@ -1,6 +1,6 @@
 # Query Broker
 
-> Version 0.1.0 · 2026-05-01 · [CHANGELOG](CHANGELOG.md)
+> Version 0.2.0 · 2026-05-04 · [CHANGELOG](CHANGELOG.md)
 
 **Föderierter Query Broker für die Integration verteilter Primärdatenquellen (PDS, Primary Data Source) über ein Patientenportal und Drittanwendungen.**
 
@@ -85,32 +85,32 @@ docker compose up -d                    # RabbitMQ, Katalog-Server, Mock-THS
 
 ## Dokumentation
 
-| Dokument                                           | Inhalt                                                                 |
-| -------------------------------------------------- | ---------------------------------------------------------------------- |
-| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**        | Arc42-Architekturdokumentation (12 Kapitel)                            |
-| **[INTEGRATION.md](INTEGRATION.md)**               | Sprachagnostischer Implementierungsleitfaden für PDS-Entwickler        |
-| **[CONTRIBUTING.md](CONTRIBUTING.md)**             | Broker/SDK-Entwicklung, Konformitätstests, neue Operationen definieren |
-| **[AsyncAPI Spec](specs/pds-connector-base.yaml)** | Transport-Contract (AMQP-Topologie)                                    |
-| **[Nachrichtenkatalog](catalog/)**                 | OperationDefinitions, MessageDefinitions, GraphDefinitions             |
+| Dokument | Inhalt |
+|----------|--------|
+| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Arc42-Architekturdokumentation (12 Kapitel) |
+| **[PDS_INTEGRATION.md](PDS_INTEGRATION.md)** | Sprachagnostischer Implementierungsleitfaden für PDS-Entwickler |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Broker/SDK-Entwicklung, Konformitätstests, neue Operationen definieren |
+| **[AsyncAPI Spec](specs/pds-connector-base.yaml)** | Transport-Contract (AMQP-Topologie) |
+| **[Nachrichtenkatalog](catalog/)** | OperationDefinitions, MessageDefinitions, GraphDefinitions |
 
 ---
 
 ## Standards
 
-| Komponente              | Standard                                             | Referenz                                                                 |
-| ----------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
-| Nachrichtenformat       | FHIR R4 Messaging                                    | [HL7](https://hl7.org/fhir/R4/messaging.html)                            |
-| Nachrichtenvertrag      | FHIR MessageDefinition                               | [HL7](https://hl7.org/fhir/R4/messagedefinition.html)                    |
-| Operationsspezifikation | FHIR OperationDefinition                             | [HL7](https://hl7.org/fhir/R4/operationdefinition.html)                  |
-| Payload-Struktur        | FHIR GraphDefinition                                 | [HL7](https://hl7.org/fhir/R4/graphdefinition.html)                      |
-| Capability-Discovery    | FHIR CapabilityStatement.messaging                   | [HL7](https://hl7.org/fhir/R4/capabilitystatement.html)                  |
-| Output-Profilierung     | FHIR StructureDefinition (projektspezifisch wählbar) | [HL7](https://hl7.org/fhir/R4/structuredefinition.html)                  |
-| Daten-Provenienz        | FHIR Provenance                                      | [HL7](https://hl7.org/fhir/R4/provenance.html)                           |
-| Verarbeitungsprotokoll  | FHIR AuditEvent                                      | [HL7](https://hl7.org/fhir/R4/auditevent.html)                           |
-| Transport               | AMQP 0-9-1 / AsyncAPI 3.0                            | [AsyncAPI](https://www.asyncapi.com/docs/reference/specification/v3.0.0) |
-| Pseudonymisierung       | MOSAiC: E-PIX, gPAS                                  | [THS Greifswald](https://www.ths-greifswald.de/forscher/mosaic-projekt/) |
-| Authentifizierung       | SMART on FHIR / OAuth2                               | [SMART](https://docs.smarthealthit.org/)                                 |
-| Service-Verzeichnis     | IHE mCSD                                             | [IHE](https://profiles.ihe.net/ITI/mCSD/)                                |
+| Komponente | Standard | Referenz |
+|------------|----------|----------|
+| Nachrichtenformat | FHIR R4 Messaging | [HL7](https://hl7.org/fhir/R4/messaging.html) |
+| Nachrichtenvertrag | FHIR MessageDefinition | [HL7](https://hl7.org/fhir/R4/messagedefinition.html) |
+| Operationsspezifikation | FHIR OperationDefinition | [HL7](https://hl7.org/fhir/R4/operationdefinition.html) |
+| Payload-Struktur | FHIR GraphDefinition | [HL7](https://hl7.org/fhir/R4/graphdefinition.html) |
+| Capability-Discovery | FHIR CapabilityStatement.messaging | [HL7](https://hl7.org/fhir/R4/capabilitystatement.html) |
+| Output-Profilierung | FHIR StructureDefinition (projektspezifisch wählbar) | [HL7](https://hl7.org/fhir/R4/structuredefinition.html) |
+| Daten-Provenienz | FHIR Provenance | [HL7](https://hl7.org/fhir/R4/provenance.html) |
+| Verarbeitungsprotokoll | FHIR AuditEvent | [HL7](https://hl7.org/fhir/R4/auditevent.html) |
+| Transport | AMQP 0-9-1 / AsyncAPI 3.0 | [AsyncAPI](https://www.asyncapi.com/docs/reference/specification/v3.0.0) |
+| Pseudonymisierung | MOSAiC: E-PIX, gPAS | [THS Greifswald](https://www.ths-greifswald.de/forscher/mosaic-projekt/) |
+| Authentifizierung | SMART on FHIR / OAuth2 | [SMART](https://docs.smarthealthit.org/) |
+| Service-Verzeichnis | IHE mCSD | [IHE](https://profiles.ihe.net/ITI/mCSD/) |
 
 ## Lizenz
 

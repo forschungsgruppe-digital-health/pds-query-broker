@@ -1,6 +1,6 @@
 # Architekturdokumentation — Query Broker
 
-> Version 0.1.0 · 2026-05-01 · Struktur nach [arc42](https://arc42.org/) Template v9.0 (Juli 2025). Nicht alle Abschnitte sind in der aktuellen Projektphase befüllt.
+> Version 0.2.0 · 2026-05-04 · Struktur nach [arc42](https://arc42.org/) Template v9.0 (Juli 2025). Nicht alle Abschnitte sind in der aktuellen Projektphase befüllt.
 
 ---
 
@@ -53,7 +53,7 @@ Der Query Broker verteilt Datenanfragen eines Patientenportals (und potenzieller
 
 | Konvention | Regel |
 |------------|-------|
-| OperationDefinition-Namen | PascalCase, Regex `[A-Z]([A-Za-z0-9_]){1,254}` (FHIR Constraint opd-0). Beispiele: `GetConditions`, `GetLabResults`, `GetPathwayStatus`. |
+| OperationDefinition-Namen | PascalCase, Regex `[A-Z]([A-Za-z0-9_]){1,254}` (FHIR Constraint opd-0). Beispiel: `GetConditions`. |
 | Kanonische URLs | `https://{project}.example.org/fhir/{ResourceType}/{Name}` |
 | Profil-URLs | Projektspezifisch. Beispiel MII KDS: `https://www.medizininformatik-initiative.de/fhir/core/modul-{name}/StructureDefinition/{Ressource}` |
 | Pseudonym-Identifier | `system` = gPAS-Domäne (`https://ths.example.org/gpas/domain/{PDS-ID}`), `value` = Pseudonym |
@@ -217,7 +217,7 @@ graph TB
         ABS["AbstractPdsConnector<br/><i>AMQP Listener · Pseudonym-Filter<br/>Capability-Check · Profilvalidierung</i>"]
     end
     subgraph "PDS-Entwickler"
-        MAP["OperationHandler-Map<br/><i>GetConditions → Handler<br/>GetLabResults → Handler</i>"]
+        MAP["OperationHandler-Map<br/><i>GetConditions → Handler<br/>... → Handler</i>"]
         H["Konkreter Handler<br/><i>lok. THS → DB-Query → FHIR</i>"]
     end
     subgraph "Extern"
@@ -394,8 +394,8 @@ OperationDefinition-Namen folgen dem FHIR-Namensschema (Constraint opd-0, Regex 
 | Beispiele (korrekt) | Beispiele (falsch) |
 |---------------------|--------------------|
 | `GetConditions` | ~~`GET_CONDITIONS`~~ |
-| `GetLabResults` | ~~`get-lab-results`~~ |
-| `GetPathwayStatus` | ~~`getPathwayStatus`~~ (beginnt mit Kleinbuchstabe) |
+| `FetchSomething` | ~~`fetch-something`~~ |
+| `RetrieveData` | ~~`retrieveData`~~ (beginnt mit Kleinbuchstabe) |
 
 ### 8.4 Capability-Discovery
 
@@ -562,7 +562,7 @@ Jedes anfragende System erhält eine eigene Response-Queue (z.B. `responses.port
 | QS-1 | Ein Connector liefert Condition-Ressourcen ohne ICD-10-GM-Coding. | `FhirProfileValidator` im Stub erkennt Profilverstoß und sendet `OperationOutcome` statt invalider Daten. | 0 nicht-profilkonforme Ressourcen erreichen den Broker. |
 | QS-2 | Ein neues PDS soll angebunden werden. | PDS-Entwickler generiert Stub, implementiert Handler, deklariert Queue. | Broker-Code und bestehende Connectoren bleiben unverändert (0 Änderungen). |
 | QS-3 | Ein PDS antwortet nicht innerhalb des konfigurierten Timeouts (Default: 8s). | Aggregator erzeugt Partial Result mit `OperationOutcome` für das fehlende PDS. | Portal erhält Ergebnisse der antwortenden PDS innerhalb 10s. |
-| QS-4 | Eine neue Operation `GetTumorBoardResult` wird benötigt. | Projektkern legt OperationDefinition + MessageDefinition + GraphDefinition im Katalog an. | 0 Connector-Rebuilds nötig. Bestehende Connectoren antworten mit `not-supported`. |
+| QS-4 | Eine neue Operation `GetNewData` wird benötigt. | Projektkern legt OperationDefinition + MessageDefinition + GraphDefinition im Katalog an. | 0 Connector-Rebuilds nötig. Bestehende Connectoren antworten mit `not-supported`. |
 | QS-5 | Ein konfiguriertes Profil wird in neuer Version veröffentlicht. | Katalog-Update (`targetProfile` aktualisieren), Konformitätstests pro PDS, Re-Zertifizierung. | Alle Connectoren validieren gegen die neue Profilversion vor dem nächsten Release. |
 | QS-6 | Ein Auditor will nachvollziehen, welches PDS eine bestimmte Condition-Ressource geliefert hat und ob die Profilvalidierung bestanden wurde. | `Provenance.agent.who` identifiziert das PDS, `Provenance.entity.what` das Quellsystem. `AuditEvent.entity.detail[profile-validation]` dokumentiert das Validierungsergebnis. | Jede fachliche Ressource im aggregierten Bundle hat genau eine zugehörige `Provenance` und mindestens ein `AuditEvent`. |
 

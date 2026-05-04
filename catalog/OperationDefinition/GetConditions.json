@@ -1,0 +1,56 @@
+{
+  "resourceType": "OperationDefinition",
+  "id": "GetConditions",
+  "url": "https://querybroker.example.org/fhir/OperationDefinition/GetConditions",
+  "name": "GetConditions",
+  "title": "Diagnosen abrufen (Beispieloperation)",
+  "status": "active",
+  "kind": "operation",
+  "code": "GetConditions",
+  "description": "Exemplarische Operation: Ruft Diagnosen ab. targetProfile ist optional.",
+  "resource": [
+    "Condition"
+  ],
+  "system": false,
+  "type": true,
+  "instance": false,
+  "parameter": [
+    {
+      "name": "pseudonym",
+      "use": "in",
+      "min": 1,
+      "max": "*",
+      "type": "Identifier"
+    },
+    {
+      "name": "dateFrom",
+      "use": "in",
+      "min": 0,
+      "max": "1",
+      "type": "date"
+    },
+    {
+      "name": "code",
+      "use": "in",
+      "min": 0,
+      "max": "1",
+      "type": "string"
+    },
+    {
+      "name": "return",
+      "use": "out",
+      "min": 1,
+      "max": "1",
+      "type": "Bundle",
+      "part": [
+        {
+          "name": "condition",
+          "use": "out",
+          "min": 0,
+          "max": "*",
+          "type": "Condition"
+        }
+      ]
+    }
+  ]
+}

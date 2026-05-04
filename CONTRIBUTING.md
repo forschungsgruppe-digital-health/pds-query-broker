@@ -1,6 +1,6 @@
 # Contributing
 
-> Version 0.1.0 · 2026-05-01
+> Version 0.2.0 · 2026-05-04
 
 Dieses Dokument beschreibt, wie der Query Broker weiterentwickelt, getestet und um projektspezifische Operationen erweitert wird.
 
@@ -9,8 +9,8 @@ Dieses Dokument beschreibt, wie der Query Broker weiterentwickelt, getestet und 
 ## 1. Entwicklungsumgebung einrichten
 
 ```bash
-git clone https://github.com/[org]/pds-query-broker.git
-cd pds-query-broker
+git clone https://github.com/[org]/query-broker.git
+cd query-broker
 docker compose up -d    # RabbitMQ (5672), Katalog-Server (8090), Mock-THS (8091)
 ./gradlew build
 ```
@@ -93,7 +93,7 @@ public class MeinStandortConnector extends AbstractPdsConnector {
     public Map<String, OperationHandler> getHandlers() {
         return Map.of(
             "GetConditions",  conditionHandler,
-            "GetLabResults",  labResultHandler
+            // weitere Handler hier registrieren
         );
     }
 }
@@ -148,13 +148,13 @@ GetConditions v1.0 — Konformitätstest für PDS-MEIN-STANDORT
 
 ```mermaid
 graph LR
-    subgraph "Neues Tripel im Katalog"
-        OPDEF["OperationDefinition<br/><i>GetPathwayStatus</i>"]
-        MSGDEF["MessageDefinition<br/><i>GetPathwayStatusRequest</i>"]
-        GRAPHDEF["GraphDefinition<br/><i>GetPathwayStatusResponseGraph</i>"]
+    subgraph "Tripel im Katalog"
+        OPDEF["OperationDefinition<br/><i>z.B. GetConditions</i>"]
+        MSGDEF["MessageDefinition<br/><i>GetConditionsRequest</i>"]
+        GRAPHDEF["GraphDefinition<br/><i>GetConditionsResponseGraph</i>"]
     end
-    KDS["Projektprofil"]
-    HANDLER["Neuer Handler"]
+    KDS["Projektprofil (optional)"]
+    HANDLER["Handler"]
 
     MSGDEF -->|"eventUri"| OPDEF
     OPDEF -->|"targetProfile"| KDS
@@ -162,82 +162,49 @@ graph LR
     HANDLER -.->|"implementiert"| OPDEF
 ```
 
-### Beispiel: `GetPathwayStatus`
+### Beispiel: `GetConditions`
 
-> OperationDefinition-Namen folgen dem FHIR-Namensschema: PascalCase, Constraint opd-0 (vgl. [FHIR R4 OperationDefinition](https://hl7.org/fhir/R4/operationdefinition.html)).
+> OperationDefinition-Namen folgen dem FHIR-Namensschema: PascalCase, Constraint opd-0 (vgl. [FHIR R4 OperationDefinition](https://hl7.org/fhir/R4/operationdefinition.html)). Die vollständigen FHIR-JSON-Dateien der Beispieloperation liegen unter `catalog/`.
 
-**OperationDefinition** (`catalog/OperationDefinition/GetPathwayStatus.json`):
+**OperationDefinition** (`catalog/OperationDefinition/GetConditions.json`):
 
 ```json
 {
   "resourceType": "OperationDefinition",
-  "url": "https://mihub.example.org/fhir/OperationDefinition/GetPathwayStatus",
-  "name": "GetPathwayStatus",
-  "version": "1.0",
+  "url": "https://querybroker.example.org/fhir/OperationDefinition/GetConditions",
+  "name": "GetConditions",
   "status": "active",
   "kind": "operation",
-  "resource": ["CarePlan"],
+  "code": "GetConditions",
+  "resource": ["Condition"],
   "parameter": [
-    {
-      "name": "pseudonym",
-      "use": "in",
-      "min": 1,
-      "max": "*",
-      "type": "Identifier"
-    },
-    {
-      "name": "pathwayId",
-      "use": "in",
-      "min": 1,
-      "max": "1",
-      "type": "string"
-    },
-    {
-      "name": "includeHistory",
-      "use": "in",
-      "min": 0,
-      "max": "1",
-      "type": "boolean"
-    },
-    {
-      "name": "return",
-      "use": "out",
-      "min": 1,
-      "max": "1",
-      "type": "Bundle",
-      "part": [
-        {
-          "name": "carePlan",
-          "use": "out",
-          "min": 0,
-          "max": "*",
-          "type": "CarePlan",
-          "targetProfile": ["http://hl7.org/fhir/StructureDefinition/CarePlan"]
-        }
-      ]
+    { "name": "pseudonym", "use": "in", "min": 1, "max": "*", "type": "Identifier" },
+    { "name": "dateFrom", "use": "in", "min": 0, "max": "1", "type": "date" },
+    { "name": "code", "use": "in", "min": 0, "max": "1", "type": "string" },
+    { "name": "return", "use": "out", "min": 1, "max": "1", "type": "Bundle",
+      "part": [{
+        "name": "condition", "use": "out", "min": 0, "max": "*", "type": "Condition"
+      }]
     }
   ]
 }
 ```
 
-**MessageDefinition** (`catalog/MessageDefinition/GetPathwayStatusRequest.json`):
+**MessageDefinition** (`catalog/MessageDefinition/GetConditionsRequest.json`):
 
 ```json
 {
   "resourceType": "MessageDefinition",
-  "url": "https://mihub.example.org/fhir/MessageDefinition/GetPathwayStatusRequest",
+  "url": "https://querybroker.example.org/fhir/MessageDefinition/GetConditionsRequest",
   "status": "active",
-  "eventUri": "https://mihub.example.org/fhir/OperationDefinition/GetPathwayStatus",
+  "date": "2026-05-01",
+  "eventUri": "https://querybroker.example.org/fhir/OperationDefinition/GetConditions",
   "category": "consequence",
   "focus": [{ "code": "Parameters", "min": 1, "max": "1" }],
   "responseRequired": "always",
   "allowedResponse": [
-    {
-      "message": "https://mihub.example.org/fhir/MessageDefinition/GetPathwayStatusResponse"
-    },
-    {
-      "message": "https://mihub.example.org/fhir/MessageDefinition/OperationError"
-    }
+    { "message": "https://querybroker.example.org/fhir/MessageDefinition/GetConditionsResponse" },
+    { "message": "https://querybroker.example.org/fhir/MessageDefinition/OperationError" }
   ]
 }
 ```
@@ -246,7 +213,7 @@ graph LR
 
 ```bash
 curl -X POST https://catalog.example.org/fhir/OperationDefinition \
-  -H "Content-Type: application/fhir+json" -d @catalog/OperationDefinition/GetPathwayStatus.json
+  -H "Content-Type: application/fhir+json" -d @catalog/OperationDefinition/GetConditions.json
 # analog für MessageDefinition und GraphDefinition
 ```
 
@@ -254,9 +221,8 @@ curl -X POST https://catalog.example.org/fhir/OperationDefinition \
 @Override
 public Map<String, OperationHandler> getHandlers() {
     return Map.of(
-        "GetConditions",      conditionHandler,
-        "GetLabResults",      labResultHandler,
-        "GetPathwayStatus",   pathwayStatusHandler
+        "GetConditions", conditionHandler
+        // weitere Handler hier registrieren
     );
 }
 ```
@@ -276,21 +242,21 @@ public Map<String, OperationHandler> getHandlers() {
 
 ### Broker-Kernklassen
 
-| Klasse                      | Verantwortlichkeit                                                                |
-| --------------------------- | --------------------------------------------------------------------------------- |
-| `MessageDefinitionRegistry` | Katalog laden, FHIR Messages validieren                                           |
-| `CapabilityRouter`          | Routing via Pseudonym-Map + CapabilityStatement.messaging                         |
-| `QueryBrokerService`        | Fan-out, correlationId                                                            |
-| `ResponseAggregator`        | Korrelation via `MessageHeader.response.identifier`, Timeout → `OperationOutcome` |
+| Klasse | Verantwortlichkeit |
+|--------|-------------------|
+| `MessageDefinitionRegistry` | Katalog laden, FHIR Messages validieren |
+| `CapabilityRouter` | Routing via Pseudonym-Map + CapabilityStatement.messaging |
+| `QueryBrokerService` | Fan-out, correlationId |
+| `ResponseAggregator` | Korrelation via `MessageHeader.response.identifier`, Timeout → `OperationOutcome` |
 
 ### SDK-Kernklassen
 
-| Klasse                         | Verantwortlichkeit                                                     |
-| ------------------------------ | ---------------------------------------------------------------------- |
-| `AbstractPdsConnector`         | FHIR Message Parsing, Pseudonym-Filtering, Dispatch, Profilvalidierung |
-| `OperationHandler`             | `Bundle execute(String pseudonym, Parameters params)`                  |
-| `FhirProfileValidator`         | Validierung gegen konfigurierte StructureDefinitions + GraphDefinition |
-| `CapabilityStatementGenerator` | Generiert CapabilityStatement aus Handler-Map                          |
+| Klasse | Verantwortlichkeit |
+|--------|-------------------|
+| `AbstractPdsConnector` | FHIR Message Parsing, Pseudonym-Filtering, Dispatch, Profilvalidierung |
+| `OperationHandler` | `Bundle execute(String pseudonym, Parameters params)` |
+| `FhirProfileValidator` | Validierung gegen konfigurierte StructureDefinitions + GraphDefinition |
+| `CapabilityStatementGenerator` | Generiert CapabilityStatement aus Handler-Map |
 
 > FHIR-Profilpakete werden als Dependency im SDK eingebunden — welche Pakete, hängt vom Projektkontext ab.
 
@@ -306,11 +272,11 @@ public Map<String, OperationHandler> getHandlers() {
 
 ## 7. Release-Prozess
 
-| Komponente          | Versionierung                           |
-| ------------------- | --------------------------------------- |
-| Broker / SDK        | Semver                                  |
-| AsyncAPI Spec       | Semver (info.version)                   |
-| OperationDefinition | Semver (version-Feld)                   |
-| MessageDefinition   | Gebunden an OperationDefinition-Version |
+| Komponente | Versionierung |
+|------------|---------------|
+| Broker / SDK | Semver |
+| AsyncAPI Spec | Semver (info.version) |
+| OperationDefinition | Semver (version-Feld) |
+| MessageDefinition | Gebunden an OperationDefinition-Version |
 
 **Kompatibilitätsgarantien:** AsyncAPI Major nur bei Breaking Changes. SDK Minor Drop-in. OperationDefinitions additiv (neue optionale Parameter). Breaking Changes → neue Operation oder Major-Version.

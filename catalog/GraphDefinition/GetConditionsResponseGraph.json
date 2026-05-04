@@ -1,0 +1,18 @@
+{
+  "resourceType": "GraphDefinition",
+  "id": "GetConditionsResponseGraph",
+  "url": "https://querybroker.example.org/fhir/GraphDefinition/GetConditionsResponseGraph",
+  "name": "GetConditionsResponseGraph",
+  "status": "active",
+  "start": "Bundle",
+  "link": [
+    {
+      "path": "Bundle.entry.resource",
+      "target": [
+        {
+          "type": "Condition"
+        }
+      ]
+    }
+  ]
+}
