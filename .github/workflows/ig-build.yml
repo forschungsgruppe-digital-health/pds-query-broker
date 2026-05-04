@@ -1,0 +1,98 @@
+name: Build FHIR IG + Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ig/**'
+      - '.github/workflows/ig-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ig/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  sushi-validate:
+    name: SUSHI Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install SUSHI
+        run: npm install -g fsh-sushi
+
+      - name: Run SUSHI
+        working-directory: ig
+        run: sushi build
+
+      - name: Check for errors
+        working-directory: ig
+        run: |
+          if grep -q '"Errors"' fsh-generated/data/fsh-index.json 2>/dev/null; then
+            echo "SUSHI reported errors"
+            exit 1
+          fi
+
+      - name: Upload SUSHI output
+        uses: actions/upload-artifact@v4
+        with:
+          name: sushi-output
+          path: ig/fsh-generated/
+
+  ig-publish:
+    name: IG Publisher + Deploy
+    needs: sushi-validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install SUSHI
+        run: npm install -g fsh-sushi
+
+      - name: Run SUSHI
+        working-directory: ig
+        run: sushi build
+
+      - name: Download IG Publisher
+        working-directory: ig
+        run: |
+          curl -L -o publisher.jar \
+            https://github.com/HL7/fhir-ig-publisher/releases/latest/download/publisher.jar
+
+      - name: Run IG Publisher
+        working-directory: ig
+        run: java -Xmx4g -jar publisher.jar -ig ig.ini
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ig/output
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

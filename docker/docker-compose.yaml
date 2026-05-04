@@ -1,0 +1,99 @@
+services:
+
+  # ── Message Broker ───────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: qb-rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-broker}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-broker}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── FHIR Katalog-Server ─────────────────────────────────────────────────────
+  catalog-server:
+    image: hapiproject/hapi:v7.4.0
+    container_name: qb-catalog
+    ports:
+      - "8090:8080"
+    environment:
+      hapi.fhir.fhir_version: R4
+      hapi.fhir.allow_multiple_delete: "true"
+      hapi.fhir.reuse_cached_search_results_millis: "60000"
+    volumes:
+      - catalog-data:/data/hapi
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/fhir/metadata || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # ── Katalog-Seed: lädt OperationDefinitions, MessageDefinitions etc. ────────
+  catalog-seed:
+    image: curlimages/curl:8.7.1
+    container_name: qb-catalog-seed
+    volumes:
+      - ./catalog:/catalog:ro
+      - ./docker/catalog-seed/seed.sh:/seed.sh:ro
+    entrypoint: ["/bin/sh", "/seed.sh"]
+    environment:
+      CATALOG_URL: http://catalog-server:8080/fhir
+    depends_on:
+      catalog-server:
+        condition: service_healthy
+
+  # ── AsyncAPI Studio (Dokumentation + Spec-Viewer) ──────────────────────────
+  asyncapi-studio:
+    image: asyncapi/studio:latest
+    container_name: qb-asyncapi-studio
+    ports:
+      - "8070:80"
+    volumes:
+      - ./specs:/app/specs:ro
+
+  # ── Query Broker Service ────────────────────────────────────────────────────
+  broker:
+    build:
+      context: ./broker
+      dockerfile: Dockerfile
+    container_name: qb-broker
+    ports:
+      - "8080:8080"     # BFF API
+      - "8081:8081"     # Management / Actuator
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-broker}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-broker}
+      BROKER_CATALOG_URL: http://catalog-server:8080/fhir
+      BROKER_CATALOG_REFRESH_INTERVAL: 3600
+      BROKER_AGGREGATOR_TIMEOUT_MS: 8000
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      catalog-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  rabbitmq-data:
+  catalog-data:

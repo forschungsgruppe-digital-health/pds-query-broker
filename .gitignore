@@ -1,0 +1,32 @@
+# FHIR IG
+ig/fsh-generated/
+ig/output/
+ig/temp/
+ig/template/
+ig/input-cache/
+ig/publish.ini
+
+# IG Publisher
+ig/*.jar
+ig/_genonce.*
+ig/_updatePublisher.*
+ig/_gencontinuous.*
+
+# Node
+node_modules/
+package-lock.json
+
+# Docker
+docker/.env
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

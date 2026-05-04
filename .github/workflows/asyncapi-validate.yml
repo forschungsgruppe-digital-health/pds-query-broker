@@ -1,0 +1,31 @@
+name: Validate AsyncAPI Spec
+
+on:
+  push:
+    paths:
+      - 'specs/**'
+      - '.github/workflows/asyncapi-validate.yml'
+  pull_request:
+    paths:
+      - 'specs/**'
+
+jobs:
+  validate:
+    name: AsyncAPI Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install AsyncAPI CLI
+        run: npm install -g @asyncapi/cli
+
+      - name: Validate specs
+        run: |
+          for spec in specs/*.yaml; do
+            echo "=== Validating: $spec ==="
+            asyncapi validate "$spec"
+          done

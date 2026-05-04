@@ -1,0 +1,107 @@
+asyncapi: 3.0.0
+
+info:
+  title: Query Broker — PDS Connector Base
+  version: 1.0.0
+  description: >
+    AsyncAPI-Spezifikation für die AMQP-Topologie des Query Broker Protokolls.
+    Definiert ausschließlich Transport-Channels und Content-Type.
+    Die Nachrichtensemantik wird durch FHIR-Ressourcen beschrieben
+    (OperationDefinition, MessageDefinition, GraphDefinition).
+
+servers:
+  production:
+    host: rabbitmq.example.org:5672
+    protocol: amqp
+    protocolVersion: 0-9-1
+    description: RabbitMQ Broker (Produktion)
+
+defaultContentType: application/fhir+json
+
+channels:
+  pds.broadcast:
+    address: pds.broadcast
+    description: >
+      Fanout Exchange — der Broker publiziert Request-Bundles,
+      alle gebundenen PDS-Queues empfangen eine Kopie.
+    messages:
+      fhirMessageBundle:
+        $ref: "#/components/messages/FhirMessageBundle"
+
+  req.{pdsId}:
+    address: req.{pdsId}
+    description: >
+      PDS-spezifische Request-Queue, gebunden an pds.broadcast.
+      Jeder PDS-Connector konsumiert von seiner eigenen Queue.
+    parameters:
+      pdsId:
+        description: Eindeutiger Identifier des PDS-Standorts
+    messages:
+      fhirMessageBundle:
+        $ref: "#/components/messages/FhirMessageBundle"
+
+  responses.{systemId}:
+    address: responses.{systemId}
+    description: >
+      Systemspezifische Response-Queue. Der Broker publiziert
+      aggregierte Antworten auf die Queue, die im Request
+      über MessageHeader.destination.endpoint adressiert wurde.
+    parameters:
+      systemId:
+        description: Identifier des anfragenden Systems (z.B. portal, cdss)
+    messages:
+      fhirMessageBundle:
+        $ref: "#/components/messages/FhirMessageBundle"
+
+  pds.dlq:
+    address: pds.dlq
+    description: Dead Letter Queue für nicht verarbeitbare Nachrichten.
+    messages:
+      fhirMessageBundle:
+        $ref: "#/components/messages/FhirMessageBundle"
+
+operations:
+  publishRequest:
+    action: send
+    channel:
+      $ref: "#/channels/pds.broadcast"
+    summary: Broker publiziert Request-Bundle auf Fanout Exchange.
+
+  consumeRequest:
+    action: receive
+    channel:
+      $ref: "#/channels/req.{pdsId}"
+    summary: PDS-Connector empfängt Request-Bundle von seiner Queue.
+
+  publishResponse:
+    action: send
+    channel:
+      $ref: "#/channels/responses.{systemId}"
+    summary: Broker publiziert aggregiertes Response-Bundle auf systemspezifische Queue.
+
+components:
+  messages:
+    FhirMessageBundle:
+      name: FhirMessageBundle
+      title: FHIR Message Bundle
+      contentType: application/fhir+json
+      summary: >
+        FHIR R4 Bundle vom Typ "message". Erste Entry ist ein MessageHeader
+        mit eventUri (OperationDefinition-URL) und destination (Response-Routing).
+        Payload-Ressourcen werden über MessageHeader.focus referenziert.
+      traits:
+        - $ref: "#/components/messageTraits/commonHeaders"
+
+  messageTraits:
+    commonHeaders:
+      headers:
+        type: object
+        properties:
+          correlationId:
+            type: string
+            description: MessageHeader.id des ursprünglichen Requests (für Response-Korrelation).
+          replyTo:
+            type: string
+            description: >
+              AMQP replyTo — systemspezifische Response-Queue.
+              Korreliert mit MessageHeader.destination.endpoint.

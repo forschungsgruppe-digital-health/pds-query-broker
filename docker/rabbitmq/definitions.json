@@ -1,0 +1,92 @@
+{
+  "rabbit_version": "3.13.0",
+  "vhosts": [
+    { "name": "/" }
+  ],
+  "users": [
+    {
+      "name": "broker",
+      "password_hash": "",
+      "tags": "administrator"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "broker",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "pds.broadcast",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "pds.dlq",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "responses.portal",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "responses.default",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "pds.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "req.EXAMPLE",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "pds.dlq"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "pds.broadcast",
+      "vhost": "/",
+      "destination": "req.EXAMPLE",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "pds.dlq",
+      "vhost": "/",
+      "destination": "pds.dlq",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    }
+  ]
+}

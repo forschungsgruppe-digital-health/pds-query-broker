@@ -1,0 +1,33 @@
+name: Validate Docker Configuration
+
+on:
+  push:
+    paths:
+      - 'docker/**'
+      - '.github/workflows/docker-validate.yml'
+  pull_request:
+    paths:
+      - 'docker/**'
+
+jobs:
+  validate:
+    name: Docker Compose Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yaml
+        working-directory: docker
+        run: docker compose config --quiet
+
+      - name: Validate Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/broker/Dockerfile
+          failure-threshold: warning
+
+      - name: Validate RabbitMQ definitions.json
+        run: python3 -c "import json; json.load(open('docker/rabbitmq/definitions.json'))"
+
+      - name: Validate seed.sh syntax
+        run: bash -n docker/catalog-seed/seed.sh
