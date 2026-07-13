@@ -1,0 +1,17 @@
+{
+  "resourceType": "ValueSet",
+  "status": "active",
+  "name": "BrokerErrorCodesVS",
+  "id": "broker-error-codes-vs",
+  "title": "Query Broker Error Codes ValueSet",
+  "description": "All error codes of the Query Broker protocol.",
+  "url": "https://querybroker.example.org/fhir/ValueSet/BrokerErrorCodesVS",
+  "version": "0.1.0",
+  "compose": {
+    "include": [
+      {
+        "system": "https://querybroker.example.org/fhir/CodeSystem/BrokerErrorCodes"
+      }
+    ]
+  }
+}

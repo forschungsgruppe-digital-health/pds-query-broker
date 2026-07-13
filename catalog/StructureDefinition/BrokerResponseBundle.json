@@ -1,0 +1,145 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "broker-response-bundle",
+  "url": "https://querybroker.example.org/fhir/StructureDefinition/BrokerResponseBundle",
+  "version": "0.1.0",
+  "name": "BrokerResponseBundle",
+  "title": "Query Broker Response Bundle",
+  "status": "active",
+  "description": "Profile for the response message envelope of the Query Broker protocol —\nused both for a single connector response and for the aggregated response\nthe broker returns to the requesting system.\n\nA FHIR message Bundle (`type = message`) whose first entry is a\n[BrokerMessageHeader](StructureDefinition-broker-message-header.html) with a\nmandatory `response` element (correlation identifier + `ok | transient-error |\nfatal-error`). Result resources (e.g. `Condition`) travel as further entries —\ntheir type and optional profile binding follow from the operation's\nGraphDefinition and `targetProfile`, so they are deliberately NOT constrained\nhere (open slicing). Errors are transported as\n[BrokerOperationOutcome](StructureDefinition-broker-operation-outcome.html)\nentries; data provenance and processing logs as\n[BrokerProvenance](StructureDefinition-broker-provenance.html) and\n[BrokerAuditEvent](StructureDefinition-broker-audit-event.html) entries.",
+  "fhirVersion": "4.0.1",
+  "kind": "resource",
+  "abstract": false,
+  "type": "Bundle",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Bundle",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Bundle",
+        "path": "Bundle",
+        "constraint": [
+          {
+            "key": "qb-response-1",
+            "severity": "error",
+            "human": "The MessageHeader of a response bundle must contain a response element with the correlation identifier of the request.",
+            "expression": "entry.first().resource.ofType(MessageHeader).response.exists()",
+            "source": "https://querybroker.example.org/fhir/StructureDefinition/BrokerResponseBundle"
+          }
+        ]
+      },
+      {
+        "id": "Bundle.type",
+        "path": "Bundle.type",
+        "patternCode": "message"
+      },
+      {
+        "id": "Bundle.timestamp",
+        "path": "Bundle.timestamp",
+        "short": "Time the response message was assembled",
+        "min": 1,
+        "mustSupport": true
+      },
+      {
+        "id": "Bundle.entry",
+        "path": "Bundle.entry",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "type",
+              "path": "resource"
+            }
+          ],
+          "rules": "open",
+          "description": "MessageHeader mandatory; results open; errors/provenance/audit typed."
+        },
+        "min": 1
+      },
+      {
+        "id": "Bundle.entry:messageHeader",
+        "path": "Bundle.entry",
+        "sliceName": "messageHeader",
+        "short": "The message header (first entry, per bdl-4) with mandatory response element",
+        "min": 1,
+        "max": "1"
+      },
+      {
+        "id": "Bundle.entry:messageHeader.fullUrl",
+        "path": "Bundle.entry.fullUrl",
+        "min": 1
+      },
+      {
+        "id": "Bundle.entry:messageHeader.resource",
+        "path": "Bundle.entry.resource",
+        "type": [
+          {
+            "code": "MessageHeader",
+            "profile": [
+              "https://querybroker.example.org/fhir/StructureDefinition/BrokerMessageHeader"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Bundle.entry:operationOutcome",
+        "path": "Bundle.entry",
+        "sliceName": "operationOutcome",
+        "short": "Errors and warnings (timeout, unsupported operation, PDS-side errors)",
+        "min": 0,
+        "max": "*"
+      },
+      {
+        "id": "Bundle.entry:operationOutcome.resource",
+        "path": "Bundle.entry.resource",
+        "type": [
+          {
+            "code": "OperationOutcome",
+            "profile": [
+              "https://querybroker.example.org/fhir/StructureDefinition/BrokerOperationOutcome"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Bundle.entry:provenance",
+        "path": "Bundle.entry",
+        "sliceName": "provenance",
+        "short": "Per-resource data provenance",
+        "min": 0,
+        "max": "*"
+      },
+      {
+        "id": "Bundle.entry:provenance.resource",
+        "path": "Bundle.entry.resource",
+        "type": [
+          {
+            "code": "Provenance",
+            "profile": [
+              "https://querybroker.example.org/fhir/StructureDefinition/BrokerProvenance"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Bundle.entry:auditEvent",
+        "path": "Bundle.entry",
+        "sliceName": "auditEvent",
+        "short": "Processing log entries",
+        "min": 0,
+        "max": "*"
+      },
+      {
+        "id": "Bundle.entry:auditEvent.resource",
+        "path": "Bundle.entry.resource",
+        "type": [
+          {
+            "code": "AuditEvent",
+            "profile": [
+              "https://querybroker.example.org/fhir/StructureDefinition/BrokerAuditEvent"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

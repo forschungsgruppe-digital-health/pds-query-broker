@@ -1,0 +1,16 @@
+Instance: OperationError
+InstanceOf: MessageDefinition
+Usage: #definition
+* url = "https://querybroker.example.org/fhir/MessageDefinition/OperationError"
+* name = "OperationError"
+* title = "Operation Error — generic error response"
+* status = #active
+* date = "2026-07-13"
+* description = "Generic error response of the Query Broker protocol, allowed as a response to any operation request (listed in the request MessageDefinition's allowedResponse). The MessageHeader carries this event URI, `response.identifier` referencing the request message, and `response.code = fatal-error`; the focus is one or more BrokerOperationOutcome resources with machine-readable broker error codes. Partial failures of an otherwise successful aggregation are NOT this message — they travel as additional OperationOutcome entries inside the regular response message."
+* eventUri = "https://querybroker.example.org/fhir/event/operation-error"
+* category = #consequence
+* responseRequired = #never
+* focus[+].code = #OperationOutcome
+* focus[=].profile = "https://querybroker.example.org/fhir/StructureDefinition/BrokerOperationOutcome"
+* focus[=].min = 1
+* focus[=].max = "*"

@@ -1,0 +1,29 @@
+{
+  "resourceType": "ValueSet",
+  "status": "active",
+  "name": "BrokerProvenanceActivityVS",
+  "id": "broker-provenance-activity-vs",
+  "title": "Query Broker Provenance Activity",
+  "url": "https://querybroker.example.org/fhir/ValueSet/broker-provenance-activity-vs",
+  "compose": {
+    "include": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-DataOperation",
+        "concept": [
+          {
+            "code": "CREATE",
+            "display": "Create"
+          },
+          {
+            "code": "UPDATE",
+            "display": "Update"
+          },
+          {
+            "code": "APPEND",
+            "display": "Append"
+          }
+        ]
+      }
+    ]
+  }
+}

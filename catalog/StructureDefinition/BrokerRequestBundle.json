@@ -1,0 +1,110 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "broker-request-bundle",
+  "url": "https://querybroker.example.org/fhir/StructureDefinition/BrokerRequestBundle",
+  "version": "0.1.0",
+  "name": "BrokerRequestBundle",
+  "title": "Query Broker Request Bundle",
+  "status": "active",
+  "description": "Profile for the request message envelope of the Query Broker protocol.\n\nA FHIR message Bundle (`type = message`) whose first entry is a\n[BrokerMessageHeader](StructureDefinition-broker-message-header.html) without a\n`response` element, followed by exactly one\n[BrokerRequestParameters](StructureDefinition-broker-request-parameters.html)\ncarrying the pseudonyms and operation parameters. Additional entries are\npermitted (open slicing) for forward compatibility.",
+  "fhirVersion": "4.0.1",
+  "kind": "resource",
+  "abstract": false,
+  "type": "Bundle",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Bundle",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Bundle",
+        "path": "Bundle",
+        "constraint": [
+          {
+            "key": "qb-request-1",
+            "severity": "error",
+            "human": "The MessageHeader of a request bundle must not contain a response element.",
+            "expression": "entry.first().resource.ofType(MessageHeader).response.empty()",
+            "source": "https://querybroker.example.org/fhir/StructureDefinition/BrokerRequestBundle"
+          }
+        ]
+      },
+      {
+        "id": "Bundle.type",
+        "path": "Bundle.type",
+        "patternCode": "message"
+      },
+      {
+        "id": "Bundle.timestamp",
+        "path": "Bundle.timestamp",
+        "short": "Time the request message was assembled",
+        "min": 1,
+        "mustSupport": true
+      },
+      {
+        "id": "Bundle.entry",
+        "path": "Bundle.entry",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "type",
+              "path": "resource"
+            }
+          ],
+          "rules": "open",
+          "description": "MessageHeader and Parameters mandatory; further entries open."
+        },
+        "min": 2
+      },
+      {
+        "id": "Bundle.entry:messageHeader",
+        "path": "Bundle.entry",
+        "sliceName": "messageHeader",
+        "short": "The message header (first entry, per bdl-4)",
+        "min": 1,
+        "max": "1"
+      },
+      {
+        "id": "Bundle.entry:messageHeader.fullUrl",
+        "path": "Bundle.entry.fullUrl",
+        "min": 1
+      },
+      {
+        "id": "Bundle.entry:messageHeader.resource",
+        "path": "Bundle.entry.resource",
+        "type": [
+          {
+            "code": "MessageHeader",
+            "profile": [
+              "https://querybroker.example.org/fhir/StructureDefinition/BrokerMessageHeader"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Bundle.entry:parameters",
+        "path": "Bundle.entry",
+        "sliceName": "parameters",
+        "short": "Pseudonyms and operation parameters",
+        "min": 1,
+        "max": "1"
+      },
+      {
+        "id": "Bundle.entry:parameters.fullUrl",
+        "path": "Bundle.entry.fullUrl",
+        "min": 1
+      },
+      {
+        "id": "Bundle.entry:parameters.resource",
+        "path": "Bundle.entry.resource",
+        "type": [
+          {
+            "code": "Parameters",
+            "profile": [
+              "https://querybroker.example.org/fhir/StructureDefinition/BrokerRequestParameters"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

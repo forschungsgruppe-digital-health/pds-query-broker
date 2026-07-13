@@ -1,6 +1,8 @@
 #!/bin/sh
-# Loads all FHIR resources (OperationDefinition, MessageDefinition,
-# GraphDefinition) from the catalog/ directory into the catalog server.
+# Loads all FHIR resources (CodeSystem, ValueSet, StructureDefinition,
+# OperationDefinition, MessageDefinition, GraphDefinition) from the
+# catalog/ directory into the catalog server. Terminology and profiles
+# are loaded first so later resources can reference them.
 
 set -e
 
@@ -25,7 +27,7 @@ done
 LOADED=0
 FAILED=0
 
-for dir in OperationDefinition MessageDefinition GraphDefinition; do
+for dir in CodeSystem ValueSet StructureDefinition OperationDefinition MessageDefinition GraphDefinition; do
     if [ -d "/catalog/${dir}" ]; then
         echo ""
         echo "=== ${dir} ==="

@@ -1,0 +1,53 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "broker-operation-outcome",
+  "url": "https://querybroker.example.org/fhir/StructureDefinition/BrokerOperationOutcome",
+  "version": "0.1.0",
+  "name": "BrokerOperationOutcome",
+  "title": "Query Broker OperationOutcome",
+  "status": "active",
+  "description": "Profile for the error model of the Query Broker protocol (see\nARCHITECTURE.md § 8.6). Every issue carries a machine-readable broker error\ncode in `issue.details` (extensible binding to\n[BrokerErrorCodesVS](ValueSet-broker-error-codes-vs.html)) in addition to the\ngeneric FHIR `issue.code`, plus human-readable diagnostics. Emitted by the\nbroker (timeout, no capable PDS) and by connectors (unsupported operation,\nPDS-side errors, validation failures); transported as an entry of a\n[BrokerResponseBundle](StructureDefinition-broker-response-bundle.html).",
+  "fhirVersion": "4.0.1",
+  "kind": "resource",
+  "abstract": false,
+  "type": "OperationOutcome",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/OperationOutcome",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "OperationOutcome.issue.severity",
+        "path": "OperationOutcome.issue.severity",
+        "mustSupport": true
+      },
+      {
+        "id": "OperationOutcome.issue.code",
+        "path": "OperationOutcome.issue.code",
+        "short": "Generic FHIR issue type (e.g. timeout, not-supported, exception, invalid)",
+        "mustSupport": true
+      },
+      {
+        "id": "OperationOutcome.issue.details",
+        "path": "OperationOutcome.issue.details",
+        "short": "Machine-readable broker error code",
+        "min": 1,
+        "mustSupport": true,
+        "binding": {
+          "strength": "extensible",
+          "valueSet": "https://querybroker.example.org/fhir/ValueSet/BrokerErrorCodesVS"
+        }
+      },
+      {
+        "id": "OperationOutcome.issue.details.coding",
+        "path": "OperationOutcome.issue.details.coding",
+        "min": 1
+      },
+      {
+        "id": "OperationOutcome.issue.diagnostics",
+        "path": "OperationOutcome.issue.diagnostics",
+        "short": "Human-readable detail, e.g. affected PDS ID and timeout value",
+        "mustSupport": true
+      }
+    ]
+  }
+}

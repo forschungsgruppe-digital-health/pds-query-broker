@@ -1,0 +1,83 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "broker-message-header",
+  "url": "https://querybroker.example.org/fhir/StructureDefinition/BrokerMessageHeader",
+  "version": "0.1.0",
+  "name": "BrokerMessageHeader",
+  "title": "Query Broker MessageHeader",
+  "status": "active",
+  "description": "Profile for the MessageHeader in FHIR message Bundles of the Query Broker protocol.\n\nFormalizes `eventUri` as the canonical OperationDefinition URL, `destination`\nas the response-routing target for multi-client capability, and `source.endpoint`\nas the AMQP address. In response messages, `response` is mandatory.",
+  "fhirVersion": "4.0.1",
+  "kind": "resource",
+  "abstract": false,
+  "type": "MessageHeader",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/MessageHeader",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "MessageHeader.event[x]",
+        "path": "MessageHeader.event[x]",
+        "short": "Canonical URL of the OperationDefinition",
+        "type": [
+          {
+            "code": "uri"
+          }
+        ]
+      },
+      {
+        "id": "MessageHeader.destination",
+        "path": "MessageHeader.destination",
+        "min": 1,
+        "mustSupport": true
+      },
+      {
+        "id": "MessageHeader.destination.name",
+        "path": "MessageHeader.destination.name",
+        "short": "Name of the requesting system",
+        "mustSupport": true
+      },
+      {
+        "id": "MessageHeader.destination.endpoint",
+        "path": "MessageHeader.destination.endpoint",
+        "short": "Response queue URI of the requesting system",
+        "definition": "AMQP queue to which the broker publishes the aggregated response. Format: amqp://{host}/responses.{system-id}"
+      },
+      {
+        "id": "MessageHeader.source.name",
+        "path": "MessageHeader.source.name",
+        "short": "Name of the sending component",
+        "min": 1,
+        "mustSupport": true
+      },
+      {
+        "id": "MessageHeader.source.endpoint",
+        "path": "MessageHeader.source.endpoint",
+        "short": "AMQP endpoint of the sending component"
+      },
+      {
+        "id": "MessageHeader.response",
+        "path": "MessageHeader.response",
+        "mustSupport": true
+      },
+      {
+        "id": "MessageHeader.response.identifier",
+        "path": "MessageHeader.response.identifier",
+        "short": "MessageHeader.id of the original request message"
+      },
+      {
+        "id": "MessageHeader.focus",
+        "path": "MessageHeader.focus",
+        "short": "References to the payload resources",
+        "min": 1,
+        "mustSupport": true
+      },
+      {
+        "id": "MessageHeader.definition",
+        "path": "MessageHeader.definition",
+        "short": "Canonical URL of the MessageDefinition",
+        "mustSupport": true
+      }
+    ]
+  }
+}

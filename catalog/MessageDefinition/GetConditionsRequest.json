@@ -20,6 +20,9 @@
   "allowedResponse": [
     {
       "message": "https://querybroker.example.org/fhir/MessageDefinition/GetConditionsResponse"
+    },
+    {
+      "message": "https://querybroker.example.org/fhir/MessageDefinition/OperationError"
     }
   ]
 }
