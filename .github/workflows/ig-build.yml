@@ -5,11 +5,19 @@ on:
     branches: [main]
     paths:
       - 'ig/**'
+      - 'catalog/**'
       - '.github/workflows/ig-build.yml'
   pull_request:
     branches: [main]
     paths:
       - 'ig/**'
+      - 'catalog/**'
+
+# Pinned so the catalog drift gate compares against reproducible output.
+# Bumping SUSHI = deliberate PR: update SUSHI_VERSION, run sushi build +
+# ig/scripts/mirror-catalog.py, commit the regenerated catalog/ together.
+env:
+  SUSHI_VERSION: 3.19.0
 
 permissions:
   contents: read
@@ -32,7 +40,7 @@ jobs:
           node-version: 18
 
       - name: Install SUSHI
-        run: npm install -g fsh-sushi
+        run: npm install -g "fsh-sushi@${SUSHI_VERSION}"
 
       - name: Run SUSHI
         working-directory: ig
@@ -43,6 +51,14 @@ jobs:
         run: |
           if grep -q '"Errors"' fsh-generated/data/fsh-index.json 2>/dev/null; then
             echo "SUSHI reported errors"
+            exit 1
+          fi
+
+      - name: Check catalog mirror is in sync with FSH sources
+        run: |
+          python3 ig/scripts/mirror-catalog.py
+          if ! git diff --exit-code -- catalog/; then
+            echo "::error::catalog/ is out of sync with the FSH sources. FSH is the single source of truth — never edit catalog JSON by hand. Run: (cd ig && sushi build) && python3 ig/scripts/mirror-catalog.py"
             exit 1
           fi
 
@@ -70,7 +86,7 @@ jobs:
           java-version: 17
 
       - name: Install SUSHI
-        run: npm install -g fsh-sushi
+        run: npm install -g "fsh-sushi@${SUSHI_VERSION}"
 
       - name: Run SUSHI
         working-directory: ig

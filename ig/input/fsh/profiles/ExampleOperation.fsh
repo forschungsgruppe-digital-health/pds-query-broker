@@ -55,6 +55,7 @@ Usage: #definition
 * focus[=].min = 1
 * focus[=].max = "1"
 * allowedResponse[+].message = "https://querybroker.example.org/fhir/MessageDefinition/GetConditionsResponse"
+* allowedResponse[+].message = "https://querybroker.example.org/fhir/MessageDefinition/OperationError"
 
 
 Instance: GetConditionsResponse

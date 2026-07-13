@@ -12,7 +12,9 @@
 - Skills are auto-discovered via `.claude/skills/` (symlinks into `skills/` — edit `skills/` only):
   `arc42-docs`, `architecture-dev`, `fhir-ig`.
 - Use the `fhir-ig` skill for ALL changes under `ig/` and `catalog/`; always run
-  `cd ig && sushi build` afterwards (0 errors, 0 warnings).
+  `cd ig && sushi build` afterwards (0 errors, 0 warnings), then regenerate the catalog mirror
+  with `python3 ig/scripts/mirror-catalog.py`. Never author or edit FHIR conformance JSON by
+  hand — FSH is the only source (CI enforces catalog/FSH sync).
 - Any architecture-level change: use `architecture-dev` and keep
   `specs/` + `docker/rabbitmq/definitions.json` + `docs/ARCHITECTURE.md` in sync; document
   decisions as ADRs (`arc42-docs`).

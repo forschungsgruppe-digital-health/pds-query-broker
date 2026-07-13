@@ -1,0 +1,152 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "broker-provenance",
+  "url": "https://querybroker.example.org/fhir/StructureDefinition/BrokerProvenance",
+  "version": "0.1.0",
+  "name": "BrokerProvenance",
+  "title": "Query Broker Provenance",
+  "status": "active",
+  "description": "Profile for Provenance resources documenting the origin of clinical\nresources. Agent slicing: performer (organization) and assembler\n(connector software). Entity with role source for the local source system.",
+  "fhirVersion": "4.0.1",
+  "kind": "resource",
+  "abstract": false,
+  "type": "Provenance",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Provenance",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Provenance.target",
+        "path": "Provenance.target",
+        "mustSupport": true
+      },
+      {
+        "id": "Provenance.activity",
+        "path": "Provenance.activity",
+        "mustSupport": true,
+        "binding": {
+          "strength": "extensible",
+          "valueSet": "https://querybroker.example.org/fhir/ValueSet/broker-provenance-activity-vs"
+        }
+      },
+      {
+        "id": "Provenance.agent",
+        "path": "Provenance.agent",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "value",
+              "path": "type.coding.code"
+            }
+          ],
+          "rules": "open"
+        }
+      },
+      {
+        "id": "Provenance.agent:performer",
+        "path": "Provenance.agent",
+        "sliceName": "performer",
+        "min": 1,
+        "max": "1"
+      },
+      {
+        "id": "Provenance.agent:performer.type",
+        "path": "Provenance.agent.type",
+        "min": 1
+      },
+      {
+        "id": "Provenance.agent:performer.type.coding",
+        "path": "Provenance.agent.type.coding",
+        "min": 1,
+        "max": "1"
+      },
+      {
+        "id": "Provenance.agent:performer.type.coding.system",
+        "path": "Provenance.agent.type.coding.system",
+        "patternUri": "http://terminology.hl7.org/CodeSystem/provenance-participant-type"
+      },
+      {
+        "id": "Provenance.agent:performer.type.coding.code",
+        "path": "Provenance.agent.type.coding.code",
+        "min": 1,
+        "patternCode": "performer"
+      },
+      {
+        "id": "Provenance.agent:performer.who",
+        "path": "Provenance.agent.who",
+        "short": "Site / organization providing the data",
+        "type": [
+          {
+            "code": "Reference",
+            "targetProfile": [
+              "http://hl7.org/fhir/StructureDefinition/Organization"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Provenance.agent:assembler",
+        "path": "Provenance.agent",
+        "sliceName": "assembler",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Provenance.agent:assembler.type",
+        "path": "Provenance.agent.type",
+        "min": 1
+      },
+      {
+        "id": "Provenance.agent:assembler.type.coding",
+        "path": "Provenance.agent.type.coding",
+        "min": 1,
+        "max": "1"
+      },
+      {
+        "id": "Provenance.agent:assembler.type.coding.system",
+        "path": "Provenance.agent.type.coding.system",
+        "patternUri": "http://terminology.hl7.org/CodeSystem/provenance-participant-type"
+      },
+      {
+        "id": "Provenance.agent:assembler.type.coding.code",
+        "path": "Provenance.agent.type.coding.code",
+        "min": 1,
+        "patternCode": "assembler"
+      },
+      {
+        "id": "Provenance.agent:assembler.who",
+        "path": "Provenance.agent.who",
+        "short": "Connector software (name, version)",
+        "type": [
+          {
+            "code": "Reference",
+            "targetProfile": [
+              "http://hl7.org/fhir/StructureDefinition/Device"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Provenance.entity",
+        "path": "Provenance.entity",
+        "mustSupport": true
+      },
+      {
+        "id": "Provenance.entity.role",
+        "path": "Provenance.entity.role",
+        "patternCode": "source"
+      },
+      {
+        "id": "Provenance.entity.what.identifier",
+        "path": "Provenance.entity.what.identifier",
+        "short": "System URL and record ID in the source system",
+        "mustSupport": true
+      },
+      {
+        "id": "Provenance.entity.what.display",
+        "path": "Provenance.entity.what.display",
+        "mustSupport": true
+      }
+    ]
+  }
+}

@@ -77,3 +77,50 @@ Title: "AuditEvent"
 * entity[=].detail[resultCount].valueString = "3"
 * entity[=].detail[durationMs].type = "duration-ms"
 * entity[=].detail[durationMs].valueString = "2341"
+
+
+Instance: ExampleTimeoutOutcome
+InstanceOf: BrokerOperationOutcome
+Usage: #example
+Title: "OperationOutcome (PDS timeout)"
+* issue[+].severity = #error
+* issue[=].code = #timeout
+* issue[=].details = BrokerErrorCodes#timeout "PDS response timeout"
+* issue[=].diagnostics = "No addressed PDS responded within 30 s; the request produced no result."
+
+
+Instance: ExampleErrorMessageHeader
+InstanceOf: BrokerMessageHeader
+Usage: #example
+Title: "Error MessageHeader"
+* eventUri = "https://querybroker.example.org/fhir/event/operation-error"
+* definition = "https://querybroker.example.org/fhir/MessageDefinition/OperationError"
+* destination[+].name = "Patient Portal"
+* destination[=].endpoint = "amqp://rabbitmq.example.org/responses.portal"
+* source.name = "Query Broker"
+* source.endpoint = "amqp://rabbitmq.example.org/pds.broadcast"
+* response.identifier = "msg-header-001"
+* response.code = #fatal-error
+* focus[+].reference = "urn:uuid:outcome-001"
+
+
+Instance: ExampleRequestBundle
+InstanceOf: BrokerRequestBundle
+Usage: #example
+Title: "Request Bundle"
+* timestamp = "2026-05-01T10:15:00.000Z"
+* entry[+].fullUrl = "urn:uuid:msg-header-001"
+* entry[=].resource = ExampleRequestMessageHeader
+* entry[+].fullUrl = "urn:uuid:params-001"
+* entry[=].resource = ExampleRequestParameters
+
+
+Instance: ExampleErrorResponseBundle
+InstanceOf: BrokerResponseBundle
+Usage: #example
+Title: "Error Response Bundle"
+* timestamp = "2026-05-01T10:15:31.000Z"
+* entry[+].fullUrl = "urn:uuid:msg-header-002"
+* entry[=].resource = ExampleErrorMessageHeader
+* entry[+].fullUrl = "urn:uuid:outcome-001"
+* entry[=].resource = ExampleTimeoutOutcome

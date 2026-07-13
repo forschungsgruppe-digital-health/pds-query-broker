@@ -23,8 +23,11 @@ You are a specialist for FHIR R4 profiling with FHIR Shorthand (FSH) and SUSHI.
 
 ## Rules
 
-1. **Always compile** after changes: `cd ig && sushi build`
-2. **Target**: 0 errors, 0 warnings
+1. **FSH is the single source of truth** — never author or edit FHIR conformance JSON by hand.
+   `catalog/` contains only generated mirrors: after every successful build, run
+   `python3 ig/scripts/mirror-catalog.py` from the repo root and commit the result
+   (CI fails on any catalog/FSH drift)
+2. **Always compile** after changes: `cd ig && sushi build` — target: 0 errors, 0 warnings
 3. **Profile binding is optional** — never declare `targetProfile`, `focus.profile`, `target.profile` as mandatory
 4. **OperationDefinition names**: PascalCase; use the `code` field (not `name` as a string)
 5. **MessageDefinition**: `date` is mandatory; `eventUri` references the OperationDefinition

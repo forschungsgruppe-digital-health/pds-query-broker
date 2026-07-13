@@ -1,0 +1,69 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "broker-request-parameters",
+  "url": "https://querybroker.example.org/fhir/StructureDefinition/BrokerRequestParameters",
+  "version": "0.1.0",
+  "name": "BrokerRequestParameters",
+  "title": "Query Broker Request Parameters",
+  "status": "active",
+  "description": "Profile for the Parameters resource in request messages. Formalizes the\npseudonym parameter as a repeatable Identifier. Further operation-specific\nparameters are open (open slicing).",
+  "fhirVersion": "4.0.1",
+  "kind": "resource",
+  "abstract": false,
+  "type": "Parameters",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Parameters",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Parameters.parameter",
+        "path": "Parameters.parameter",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "value",
+              "path": "name"
+            }
+          ],
+          "rules": "open",
+          "description": "Pseudonym parameter mandatory, operation-specific parameters open."
+        },
+        "min": 1
+      },
+      {
+        "id": "Parameters.parameter:pseudonym",
+        "path": "Parameters.parameter",
+        "sliceName": "pseudonym",
+        "min": 1,
+        "max": "*"
+      },
+      {
+        "id": "Parameters.parameter:pseudonym.name",
+        "path": "Parameters.parameter.name",
+        "patternString": "pseudonym"
+      },
+      {
+        "id": "Parameters.parameter:pseudonym.value[x]",
+        "path": "Parameters.parameter.value[x]",
+        "min": 1,
+        "type": [
+          {
+            "code": "Identifier"
+          }
+        ]
+      },
+      {
+        "id": "Parameters.parameter:pseudonym.value[x].system",
+        "path": "Parameters.parameter.value[x].system",
+        "short": "URI of the pseudonymization domain",
+        "min": 1
+      },
+      {
+        "id": "Parameters.parameter:pseudonym.value[x].value",
+        "path": "Parameters.parameter.value[x].value",
+        "short": "The site-specific pseudonym",
+        "min": 1
+      }
+    ]
+  }
+}

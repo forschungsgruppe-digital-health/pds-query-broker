@@ -1,0 +1,169 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "broker-audit-event",
+  "url": "https://querybroker.example.org/fhir/StructureDefinition/BrokerAuditEvent",
+  "version": "0.1.0",
+  "name": "BrokerAuditEvent",
+  "title": "Query Broker AuditEvent",
+  "status": "active",
+  "description": "Profile for AuditEvent resources documenting processing steps.\nDefines standardized `entity.detail` keys for machine-readable logs.",
+  "fhirVersion": "4.0.1",
+  "kind": "resource",
+  "abstract": false,
+  "type": "AuditEvent",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/AuditEvent",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "AuditEvent.action",
+        "path": "AuditEvent.action",
+        "min": 1
+      },
+      {
+        "id": "AuditEvent.period",
+        "path": "AuditEvent.period",
+        "mustSupport": true
+      },
+      {
+        "id": "AuditEvent.outcome",
+        "path": "AuditEvent.outcome",
+        "min": 1
+      },
+      {
+        "id": "AuditEvent.agent.type",
+        "path": "AuditEvent.agent.type",
+        "mustSupport": true
+      },
+      {
+        "id": "AuditEvent.agent.who",
+        "path": "AuditEvent.agent.who",
+        "min": 1,
+        "type": [
+          {
+            "code": "Reference",
+            "targetProfile": [
+              "http://hl7.org/fhir/StructureDefinition/Device",
+              "http://hl7.org/fhir/StructureDefinition/Organization"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "AuditEvent.source.observer",
+        "path": "AuditEvent.source.observer",
+        "type": [
+          {
+            "code": "Reference",
+            "targetProfile": [
+              "http://hl7.org/fhir/StructureDefinition/Device",
+              "http://hl7.org/fhir/StructureDefinition/Organization"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "AuditEvent.entity",
+        "path": "AuditEvent.entity",
+        "mustSupport": true
+      },
+      {
+        "id": "AuditEvent.entity.what",
+        "path": "AuditEvent.entity.what",
+        "mustSupport": true
+      },
+      {
+        "id": "AuditEvent.entity.detail",
+        "path": "AuditEvent.entity.detail",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "value",
+              "path": "type"
+            }
+          ],
+          "rules": "open"
+        },
+        "mustSupport": true
+      },
+      {
+        "id": "AuditEvent.entity.detail:operation",
+        "path": "AuditEvent.entity.detail",
+        "sliceName": "operation",
+        "short": "Name of the operation (e.g. GetConditions)",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "AuditEvent.entity.detail:operation.type",
+        "path": "AuditEvent.entity.detail.type",
+        "patternString": "operation"
+      },
+      {
+        "id": "AuditEvent.entity.detail:pseudonymDomain",
+        "path": "AuditEvent.entity.detail",
+        "sliceName": "pseudonymDomain",
+        "short": "URI of the pseudonymization domain",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "AuditEvent.entity.detail:pseudonymDomain.type",
+        "path": "AuditEvent.entity.detail.type",
+        "patternString": "pseudonym-domain"
+      },
+      {
+        "id": "AuditEvent.entity.detail:sourceSystem",
+        "path": "AuditEvent.entity.detail",
+        "sliceName": "sourceSystem",
+        "short": "Name of the source system",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "AuditEvent.entity.detail:sourceSystem.type",
+        "path": "AuditEvent.entity.detail.type",
+        "patternString": "source-system"
+      },
+      {
+        "id": "AuditEvent.entity.detail:profileValidation",
+        "path": "AuditEvent.entity.detail",
+        "sliceName": "profileValidation",
+        "short": "Result: passed | failed | skipped",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "AuditEvent.entity.detail:profileValidation.type",
+        "path": "AuditEvent.entity.detail.type",
+        "patternString": "profile-validation"
+      },
+      {
+        "id": "AuditEvent.entity.detail:resultCount",
+        "path": "AuditEvent.entity.detail",
+        "sliceName": "resultCount",
+        "short": "Number of clinical resources",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "AuditEvent.entity.detail:resultCount.type",
+        "path": "AuditEvent.entity.detail.type",
+        "patternString": "result-count"
+      },
+      {
+        "id": "AuditEvent.entity.detail:durationMs",
+        "path": "AuditEvent.entity.detail",
+        "sliceName": "durationMs",
+        "short": "Processing duration in milliseconds",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "AuditEvent.entity.detail:durationMs.type",
+        "path": "AuditEvent.entity.detail.type",
+        "patternString": "duration-ms"
+      }
+    ]
+  }
+}

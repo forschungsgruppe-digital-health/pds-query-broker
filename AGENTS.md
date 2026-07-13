@@ -51,6 +51,11 @@ checks), SUSHI validation + IG Publisher + GitHub Pages deploy, release-please.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) — types drive SemVer via
   release-please. Scopes: `broker`, `connector-sdk`, `conformance`, `catalog`, `specs`, `ig`,
   `docs`, `docker`
+- **FHIR profiling is FSH-only:** ALL FHIR conformance artifacts (profiles, CodeSystems, ValueSets,
+  OperationDefinitions, MessageDefinitions, GraphDefinitions) are authored in FHIR Shorthand under
+  `ig/input/fsh/` and compiled with SUSHI (`cd ig && sushi build`, target 0/0). The JSON under
+  `catalog/` is **generated output** — regenerate it with `python3 ig/scripts/mirror-catalog.py`
+  after every build; never edit catalog JSON by hand (CI fails on drift)
 - **OperationDefinition names:** PascalCase, FHIR constraint opd-0 (e.g. `GetConditions`)
 - **Prefix:** PDS (primary data source), never DIZ
 - **AMQP topology:** `pds.broadcast`, `req.{pdsId}`, `responses.{systemId}`, `pds.dlq`
@@ -88,6 +93,8 @@ checks), SUSHI validation + IG Publisher + GitHub Pages deploy, release-please.
 - New exchanges/queues must be registered in BOTH `docker/rabbitmq/definitions.json` and
   `specs/pds-connector-base.yaml`.
 - Architecture decisions are recorded as ADRs in `docs/ARCHITECTURE.md` § 9 (sequential numbering).
+- FSH (`ig/input/fsh/`) is the single source of truth for FHIR conformance artifacts; `catalog/`
+  holds only SUSHI-generated mirrors (enforced by the CI drift gate in `ig-build.yml`).
 
 ## Hard boundaries (NEVER do these)
 
