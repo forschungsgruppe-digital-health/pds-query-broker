@@ -16,6 +16,18 @@ The **MiHUB patient portal** is the first real consumer: the broker must federat
 
 ## Increments (ADR-011)
 
+### Increment 1, work package 0 — communication profiles (IG)
+
+The wire format the skeleton implements must be a contract first, not a by-product of the code. **The first PR of increment 1** therefore completes the communication-profile layer of the IG (all compiled with `sushi build` at 0 errors / 0 warnings, examples included, and mirrored into `catalog/`):
+
+- **`BrokerRequestBundle`** — Bundle profile (`type = message`) slicing the request envelope: MessageHeader (`BrokerMessageHeader`) + Parameters (`BrokerRequestParameters`).
+- **`BrokerResponseBundle`** — Bundle profile (`type = message`) slicing the response envelope: MessageHeader, optional result resources (open), `BrokerOperationOutcome`, `BrokerProvenance`, `BrokerAuditEvent`.
+- **`BrokerOperationOutcome`** — profile pinning the error model of ARCHITECTURE § 8.6 (timeout, unsupported operation, PDS-side error), with a broker error CodeSystem/ValueSet so the BFF can react programmatically.
+- **`OperationError` MessageDefinition** — currently a dangling canonical in `GetConditionsRequest.allowedResponse`; defined properly (focus `OperationOutcome`) and added to `catalog/MessageDefinition/`.
+- **CapabilityStatement requirements** for connector discovery follow in increment 2 together with the conformance harness (they are its checkable input).
+
+The skeleton's integration tests assert conformance of produced bundles against these profiles — code is tested against the contract, never the reverse.
+
 ### Increment 1 — walking skeleton (start: now; ~2–3 working sessions)
 
 One thin vertical slice of `$GetConditions` on the **existing fanout topology**:
