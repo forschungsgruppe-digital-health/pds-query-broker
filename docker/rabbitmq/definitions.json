@@ -1,13 +1,16 @@
 {
   "rabbit_version": "3.13.0",
   "vhosts": [
-    { "name": "/" }
+    {
+      "name": "/"
+    }
   ],
   "users": [
     {
       "name": "broker",
-      "password_hash": "",
-      "tags": "administrator"
+      "password_hash": "obLD1OqQUaZTIBscbf8vANAAwlz/gEZ9gk90wHiFK+FWBadO",
+      "tags": "administrator",
+      "hashing_algorithm": "rabbit_password_hashing_sha256"
     }
   ],
   "permissions": [
@@ -62,20 +65,27 @@
       "arguments": {}
     },
     {
-      "name": "req.EXAMPLE",
+      "name": "req.PDS-EXAMPLE",
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
       "arguments": {
         "x-dead-letter-exchange": "pds.dlq"
       }
+    },
+    {
+      "name": "responses.broker",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
     }
   ],
   "bindings": [
     {
       "source": "pds.broadcast",
       "vhost": "/",
-      "destination": "req.EXAMPLE",
+      "destination": "req.PDS-EXAMPLE",
       "destination_type": "queue",
       "routing_key": "",
       "arguments": {}

@@ -7,7 +7,7 @@
 set -e
 
 CATALOG_URL="${CATALOG_URL:-http://catalog-server:8080/fhir}"
-MAX_RETRIES=30
+MAX_RETRIES=60
 RETRY_INTERVAL=2
 
 echo "Waiting for catalog server: ${CATALOG_URL}/metadata"
@@ -34,10 +34,20 @@ for dir in CodeSystem ValueSet StructureDefinition OperationDefinition MessageDe
         for f in /catalog/${dir}/*.json; do
             [ -f "$f" ] || continue
             NAME=$(basename "$f")
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-                -X POST "${CATALOG_URL}/${dir}" \
-                -H "Content-Type: application/fhir+json" \
-                -d @"$f")
+            # Conditional update by canonical url — idempotent (create or update).
+            CANONICAL=$(sed -n 's/.*"url" *: *"\([^"]*\)".*/\1/p' "$f" | head -1)
+            if [ -n "$CANONICAL" ]; then
+                ENCODED=$(printf '%s' "$CANONICAL" | sed 's/:/%3A/g; s|/|%2F|g')
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+                    -X PUT "${CATALOG_URL}/${dir}?url=${ENCODED}" \
+                    -H "Content-Type: application/fhir+json" \
+                    -d @"$f")
+            else
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+                    -X POST "${CATALOG_URL}/${dir}" \
+                    -H "Content-Type: application/fhir+json" \
+                    -d @"$f")
+            fi
 
             if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
                 echo "  ✓ ${NAME} (HTTP ${HTTP_CODE})"

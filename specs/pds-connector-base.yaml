@@ -5,9 +5,13 @@ info:
   version: 1.0.0
   description: >
     AsyncAPI specification for the AMQP topology of the Query Broker protocol.
-    Defines only transport channels and content type.
+    Defines only transport channels, bindings, and content type.
     The message semantics are described by FHIR resources
     (OperationDefinition, MessageDefinition, GraphDefinition).
+    Correlation is carried in AMQP message properties: correlation-id holds the
+    MessageHeader.id of the request, reply-to names the queue a connector must
+    publish its response to. Responses additionally carry the correlation in
+    FHIR (MessageHeader.response.identifier).
 
 servers:
   production:
@@ -27,38 +31,77 @@ channels:
     messages:
       fhirMessageBundle:
         $ref: "#/components/messages/FhirMessageBundle"
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: pds.broadcast
+          type: fanout
+          durable: true
+          autoDelete: false
+        bindingVersion: 0.3.0
 
   req.{pdsId}:
     address: req.{pdsId}
     description: >
-      PDS-specific request queue, bound to pds.broadcast.
-      Each PDS connector consumes from its own queue.
+      PDS-specific request queue, bound to pds.broadcast. Each PDS connector
+      consumes from its own queue. Declared durable with dead-letter exchange
+      pds.dlq (unprocessable messages are rejected without requeue and
+      dead-lettered).
     parameters:
       pdsId:
         description: Unique identifier of the PDS site
     messages:
       fhirMessageBundle:
         $ref: "#/components/messages/FhirMessageBundle"
+    bindings:
+      amqp:
+        is: queue
+        queue:
+          durable: true
+          exclusive: false
+          autoDelete: false
+        bindingVersion: 0.3.0
 
   responses.{systemId}:
     address: responses.{systemId}
     description: >
-      System-specific response queue. The broker publishes
-      aggregated responses to the queue addressed in the request
-      via MessageHeader.destination.endpoint.
+      System-specific durable response queue, addressed via the default
+      exchange (routing key = queue name). Two uses of the same pattern:
+      (1) the broker publishes aggregated responses to the queue named by the
+      request's MessageHeader.destination.endpoint (e.g. responses.portal);
+      (2) connectors publish their individual responses to the queue named by
+      the AMQP reply-to property of the request (the broker's own reply queue,
+      responses.broker).
     parameters:
       systemId:
-        description: Identifier of the requesting system (e.g. portal, cdss)
+        description: Identifier of the consuming system (e.g. portal, cdss, broker)
     messages:
       fhirMessageBundle:
         $ref: "#/components/messages/FhirMessageBundle"
+    bindings:
+      amqp:
+        is: queue
+        queue:
+          durable: true
+          exclusive: false
+          autoDelete: false
+        bindingVersion: 0.3.0
 
   pds.dlq:
     address: pds.dlq
-    description: Dead letter queue for unprocessable messages.
+    description: Dead letter queue for unprocessable (poison) messages.
     messages:
       fhirMessageBundle:
         $ref: "#/components/messages/FhirMessageBundle"
+    bindings:
+      amqp:
+        is: queue
+        queue:
+          durable: true
+          exclusive: false
+          autoDelete: false
+        bindingVersion: 0.3.0
 
 operations:
   publishRequest:
@@ -66,18 +109,49 @@ operations:
     channel:
       $ref: "#/channels/pds.broadcast"
     summary: Broker publishes the request Bundle to the fanout exchange.
+    description: >
+      AMQP properties set by the broker: correlation-id = request
+      MessageHeader.id; reply-to = the broker's response queue
+      (responses.broker); delivery mode persistent.
+    bindings:
+      amqp:
+        deliveryMode: 2
+        bindingVersion: 0.3.0
 
   consumeRequest:
     action: receive
     channel:
       $ref: "#/channels/req.{pdsId}"
     summary: PDS connector receives the request Bundle from its queue.
+    description: >
+      Connectors self-filter (broadcast + self-filtering): a connector that is
+      not addressed (no pseudonym of its gPAS domain) or does not support the
+      requested operation acknowledges silently and publishes no response.
 
-  publishResponse:
+  publishConnectorResponse:
     action: send
     channel:
       $ref: "#/channels/responses.{systemId}"
-    summary: Broker publishes the aggregated response Bundle to the system-specific queue.
+    summary: >
+      PDS connector publishes its response Bundle to the queue named by the
+      request's AMQP reply-to property, echoing the correlation-id.
+    bindings:
+      amqp:
+        deliveryMode: 2
+        bindingVersion: 0.3.0
+
+  publishAggregatedResponse:
+    action: send
+    channel:
+      $ref: "#/channels/responses.{systemId}"
+    summary: >
+      Broker publishes the aggregated response Bundle to the system-specific
+      queue derived from MessageHeader.destination.endpoint, echoing the
+      correlation-id.
+    bindings:
+      amqp:
+        deliveryMode: 2
+        bindingVersion: 0.3.0
 
 components:
   messages:
@@ -89,19 +163,8 @@ components:
         FHIR R4 Bundle of type "message". The first entry is a MessageHeader
         with eventUri (OperationDefinition URL) and destination (response routing).
         Payload resources are referenced via MessageHeader.focus.
-      traits:
-        - $ref: "#/components/messageTraits/commonHeaders"
-
-  messageTraits:
-    commonHeaders:
-      headers:
-        type: object
-        properties:
-          correlationId:
-            type: string
-            description: MessageHeader.id of the original request (for response correlation).
-          replyTo:
-            type: string
-            description: >
-              AMQP replyTo — system-specific response queue.
-              Correlates with MessageHeader.destination.endpoint.
+      description: >
+        Correlation travels in AMQP message properties (correlation-id,
+        reply-to), not in application headers. In response bundles the
+        correlation is additionally expressed in FHIR via
+        MessageHeader.response.identifier = MessageHeader.id of the request.
