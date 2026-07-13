@@ -8,6 +8,19 @@ From v0.2.0 onward, releases and changelog entries are generated automatically b
 Entries up to and including v0.2.0 were written manually following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.2.0...v0.3.0) (2026-07-13)
+
+
+### Features
+
+* **ig:** communication profiles — message envelopes, error model, OperationError ([#4](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/4)) ([69fb79e](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/69fb79e60a1debcf9d40c5824f5fc581aad3911e))
+* walking skeleton — broker, connector SDK, example connector (increment 1) ([#5](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/5)) ([d9e604a](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/d9e604ab2030d8c1987c1739e1fbc1697d68d74e))
+
+
+### Documentation
+
+* record implementation plan (ADR-010, ADR-011, IMPLEMENTATION_PLAN.md) ([#2](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/2)) ([260492b](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/260492bcbf8ef6de55758292c4aa0009fd1eed3f))
+
 ## [0.2.0] - 2026-05-04
 
 ### Changed
