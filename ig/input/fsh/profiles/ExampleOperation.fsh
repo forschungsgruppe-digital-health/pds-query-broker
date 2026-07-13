@@ -3,11 +3,11 @@ InstanceOf: OperationDefinition
 Usage: #definition
 * url = "https://querybroker.example.org/fhir/OperationDefinition/GetConditions"
 * name = "GetConditions"
-* title = "Diagnosen abrufen (Beispieloperation)"
+* title = "Retrieve diagnoses (example operation)"
 * status = #active
 * kind = #operation
 * code = #GetConditions
-* description = "Exemplarische Operation: Ruft Diagnosen ab. targetProfile ist optional."
+* description = "Exemplary operation: retrieves diagnoses. targetProfile is optional."
 * resource = #Condition
 * system = false
 * type = true

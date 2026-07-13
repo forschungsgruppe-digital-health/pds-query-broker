@@ -1,7 +1,7 @@
 FROM eclipse-temurin:17-jre-alpine
 
 LABEL maintainer="Query Broker Project"
-LABEL description="Query Broker Service — FHIR Messaging über AMQP"
+LABEL description="Query Broker Service — FHIR messaging over AMQP"
 
 WORKDIR /app
 

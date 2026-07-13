@@ -3,9 +3,9 @@ Parent: Provenance
 Id: broker-provenance
 Title: "Query Broker Provenance"
 Description: """
-Profil für Provenance-Ressourcen, die die Herkunft fachlicher Ressourcen
-dokumentieren. Agent-Slicing: performer (Organisation) und assembler
-(Connector-Software). Entity mit Rolle source für das lokale Quellsystem.
+Profile for Provenance resources documenting the origin of clinical
+resources. Agent slicing: performer (organization) and assembler
+(connector software). Entity with role source for the local source system.
 """
 
 * ^url = "https://querybroker.example.org/fhir/StructureDefinition/BrokerProvenance"
@@ -32,7 +32,7 @@ dokumentieren. Agent-Slicing: performer (Organisation) und assembler
 * agent[performer].type.coding.code = #performer
 * agent[performer].who 1..1
 * agent[performer].who only Reference(Organization)
-* agent[performer].who ^short = "Standort / Organisation, die die Daten bereitstellt"
+* agent[performer].who ^short = "Site / organization providing the data"
 
 * agent[assembler].type 1..1
 * agent[assembler].type.coding 1..1
@@ -40,14 +40,14 @@ dokumentieren. Agent-Slicing: performer (Organisation) und assembler
 * agent[assembler].type.coding.code = #assembler
 * agent[assembler].who 1..1
 * agent[assembler].who only Reference(Device)
-* agent[assembler].who ^short = "Connector-Software (Name, Version)"
+* agent[assembler].who ^short = "Connector software (name, version)"
 
 * entity 0..* MS
 * entity.role 1..1
 * entity.role = #source
 * entity.what 1..1
 * entity.what.identifier 0..1 MS
-* entity.what.identifier ^short = "System-URL und Record-ID im Quellsystem"
+* entity.what.identifier ^short = "System URL and record ID in the source system"
 * entity.what.display 0..1 MS
 
 

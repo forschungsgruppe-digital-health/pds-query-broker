@@ -21,7 +21,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── FHIR Katalog-Server ─────────────────────────────────────────────────────
+  # ── FHIR catalog server ─────────────────────────────────────────────────────
   catalog-server:
     image: hapiproject/hapi:v7.4.0
     container_name: qb-catalog
@@ -43,7 +43,7 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  # ── Katalog-Seed: lädt OperationDefinitions, MessageDefinitions etc. ────────
+  # ── Catalog seed: loads OperationDefinitions, MessageDefinitions, etc. ──────
   catalog-seed:
     image: curlimages/curl:8.7.1
     container_name: qb-catalog-seed
@@ -57,7 +57,7 @@ services:
       catalog-server:
         condition: service_healthy
 
-  # ── AsyncAPI Studio (Dokumentation + Spec-Viewer) ──────────────────────────
+  # ── AsyncAPI Studio (documentation + spec viewer) ──────────────────────────
   asyncapi-studio:
     image: asyncapi/studio:latest
     container_name: qb-asyncapi-studio
@@ -66,7 +66,7 @@ services:
     volumes:
       - ./specs:/app/specs:ro
 
-  # ── Query Broker Service ────────────────────────────────────────────────────
+  # ── Query Broker service ────────────────────────────────────────────────────
   broker:
     build:
       context: ./broker
