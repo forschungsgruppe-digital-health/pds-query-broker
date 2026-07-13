@@ -162,9 +162,21 @@ graph LR
     HANDLER -.->|"implements"| OPDEF
 ```
 
+### Authoring workflow: FSH → SUSHI → catalog
+
+All FHIR conformance artifacts (profiles, CodeSystems, ValueSets, OperationDefinitions, MessageDefinitions, GraphDefinitions) are authored **exclusively in FHIR Shorthand (FSH)** under `ig/input/fsh/` — never as hand-written JSON:
+
+```bash
+# 1. Author/edit FSH under ig/input/fsh/ (profiles/ and examples/)
+cd ig && sushi build            # 2. Compile — target: 0 errors, 0 warnings
+cd .. && python3 ig/scripts/mirror-catalog.py   # 3. Regenerate the catalog/ mirror
+```
+
+The JSON under `catalog/` is generated output and committed only so the catalog server can be seeded without a build step. CI (`ig-build.yml`) recompiles the FSH and fails on any drift between `catalog/` and the FSH sources — hand-edited catalog JSON will not pass.
+
 ### Example: `GetConditions`
 
-> OperationDefinition names follow the FHIR naming scheme: PascalCase, constraint opd-0 (cf. [FHIR R4 OperationDefinition](https://hl7.org/fhir/R4/operationdefinition.html)). The complete FHIR JSON files of the example operation live under `catalog/`.
+> OperationDefinition names follow the FHIR naming scheme: PascalCase, constraint opd-0 (cf. [FHIR R4 OperationDefinition](https://hl7.org/fhir/R4/operationdefinition.html)). The FSH sources of the example operation live in `ig/input/fsh/profiles/ExampleOperation.fsh`; the generated JSON below lives under `catalog/`.
 
 **OperationDefinition** (`catalog/OperationDefinition/GetConditions.json`):
 
@@ -229,6 +241,7 @@ public Map<String, OperationHandler> getHandlers() {
 
 ### Checklist
 
+- [ ] Triple authored in FSH under `ig/input/fsh/` (never hand-written JSON); `sushi build` at 0 errors / 0 warnings; `catalog/` mirror regenerated via `ig/scripts/mirror-catalog.py`
 - [ ] OperationDefinition: `name` in PascalCase, canonical `url`, `return.part[].targetProfile` set (optional)
 - [ ] MessageDefinition (request): `eventUri` → OperationDefinition, `allowedResponse` complete
 - [ ] MessageDefinition (response): `focus.profile` → project profile (if configured)
