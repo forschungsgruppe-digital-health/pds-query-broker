@@ -4,6 +4,10 @@ spring:
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:localhost}
     port: ${SPRING_RABBITMQ_PORT:5672}
+    listener:
+      simple:
+        # Reject unprocessable (poison) messages instead of redelivering forever.
+        default-requeue-rejected: false
 
 broker:
   catalog-url: ${BROKER_CATALOG_URL:http://localhost:8090/fhir}
