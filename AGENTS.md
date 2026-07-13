@@ -10,17 +10,18 @@ On conflict, this file wins.
 - **Project:** Federated Query Broker for distributed primary data sources (PDS), integrated via a
   patient portal and third-party applications (MiHUB / CAEHR context)
 - **Owner:** TU Dresden / Forschungsgruppe Digital Health (FGDH)
-- **Status:** **specification-first** — this repo contains architecture documentation, a FHIR R4
-  ImplementationGuide, the AsyncAPI transport contract, the message catalog, and a Docker dev
-  stack. The broker/SDK/connector **implementation does not exist yet**; `./gradlew …` commands in
-  the docs describe the planned target state.
+- **Status:** **walking skeleton** (increment 1 per ADR-011 / `docs/IMPLEMENTATION_PLAN.md`) —
+  broker, connector SDK, and a synthetic reference connector run `$GetConditions` end-to-end over
+  the fanout topology (Gradle modules `broker/`, `connector-sdk/`, `connectors/pds-example/`).
+  Still staged for later increments: profile validation, conformance harness, BFF, real THS, auth.
 
 ## Tech stack (current + planned)
 
 - **Specs:** FHIR R4 (FSH/SUSHI ImplementationGuide), AsyncAPI 3.0 (AMQP 0-9-1)
 - **Infrastructure (dev):** Docker Compose — RabbitMQ 3.13, HAPI FHIR catalog server, catalog seed,
   AsyncAPI Studio
-- **Implementation (planned):** Java 17+, Spring Boot, HAPI FHIR, JUnit 5 + AssertJ, Testcontainers
+- **Implementation:** Java 21 (Gradle toolchain), Spring Boot 3.x + Spring AMQP, HAPI FHIR 8.x,
+  JUnit 5 + AssertJ + Testcontainers (ADR-010)
 - **Pseudonymization:** MOSAiC (E-PIX, gPAS) via trusted third party (THS)
 
 ## Repository map
@@ -41,6 +42,9 @@ On conflict, this file wins.
 - **Start the dev stack:** `cd docker && cp .env.example .env && docker compose up -d`
   (RabbitMQ 5672/15672, catalog server 8090, AsyncAPI Studio)
 - **Validate AsyncAPI:** `asyncapi validate specs/pds-connector-base.yaml`
+- **Build + test the implementation:** `./gradlew build` (unit + Testcontainers integration tests;
+  needs a Docker daemon). Single apps: `./gradlew :broker:bootRun`,
+  `./gradlew :connectors:pds-example:bootRun`
 
 CI (GitHub Actions): AsyncAPI validation, Docker validation (compose config + hadolint + JSON/shell
 checks), SUSHI validation + IG Publisher + GitHub Pages deploy, release-please.

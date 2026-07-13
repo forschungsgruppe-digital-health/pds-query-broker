@@ -1,0 +1,42 @@
+{
+  "resourceType": "Bundle",
+  "type": "message",
+  "timestamp": "2026-07-13T12:00:00Z",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:demo-header-0001",
+      "resource": {
+        "resourceType": "MessageHeader",
+        "id": "demo-header-0001",
+        "eventUri": "https://querybroker.example.org/fhir/OperationDefinition/GetConditions",
+        "destination": [
+          {
+            "name": "Demo Client",
+            "endpoint": "amqp://rabbitmq/responses.portal"
+          }
+        ],
+        "source": {
+          "name": "Demo Client",
+          "endpoint": "amqp://rabbitmq/responses.portal"
+        },
+        "focus": [{ "reference": "urn:uuid:demo-params-0001" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:demo-params-0001",
+      "resource": {
+        "resourceType": "Parameters",
+        "id": "demo-params-0001",
+        "parameter": [
+          {
+            "name": "pseudonym",
+            "valueIdentifier": {
+              "system": "https://ths.example.org/gpas/domain/PDS-EXAMPLE",
+              "value": "PSN-EXAMPLE-0001"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

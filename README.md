@@ -4,7 +4,7 @@
 
 **Federated query broker for integrating distributed primary data sources (PDS) via a patient portal and third-party applications.**
 
-> **Status:** specification-first. This repository currently contains the architecture, the FHIR Implementation Guide, the AsyncAPI transport contract, the message catalog, and the local infrastructure setup. The broker/connector implementation (`./gradlew …` commands below) is the planned target state and does not exist yet.
+> **Status:** walking skeleton (increment 1, [ADR-011](docs/ARCHITECTURE.md#adr-011-staged-pilot-implementation--walking-skeleton-first)). The broker, connector SDK, and a synthetic reference connector run the `$GetConditions` loop end-to-end over the fanout topology — including catalog lookup, self-filtering, aggregation, and the timeout → `OperationOutcome` path. Not yet included (staged): profile validation, conformance harness, BFF, real THS, auth (see [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)).
 
 ---
 
@@ -78,9 +78,24 @@ Example: an operation `GetConditions` retrieves diagnoses of a pseudonymized pat
 ## Quick start
 
 ```bash
-docker compose up -d                       # RabbitMQ, catalog server, mock THS
-./gradlew :broker:bootRun                  # start broker           (planned)
-./gradlew :connectors:pds-example:bootRun  # start reference connector (planned)
+cd docker && cp .env.example .env
+docker compose up -d          # RabbitMQ, catalog server + seed, broker, example connector
+```
+
+Then send a federated query (synthetic pseudonym `PSN-EXAMPLE-0001`):
+
+```bash
+curl -s -X POST http://localhost:8080/fhir/\$process-message \
+  -H "Content-Type: application/fhir+json" \
+  -d @docker/demo/get-conditions-request.json
+```
+
+For local development without containers (RabbitMQ + catalog still via compose):
+
+```bash
+./gradlew :broker:bootRun                  # start broker
+./gradlew :connectors:pds-example:bootRun  # start reference connector
+./gradlew build                            # lint, unit + integration tests
 ```
 
 ---

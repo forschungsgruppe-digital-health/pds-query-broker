@@ -1,0 +1,12 @@
+.git
+.gradle
+**/build
+ig/output
+ig/fsh-generated
+ig/input-cache
+ig/*.jar
+node_modules
+.claude
+.codex
+docs
+*.md

@@ -11,8 +11,8 @@ This document describes how the Query Broker is developed, tested, and extended 
 ```bash
 git clone https://github.com/forschungsgruppe-digital-health/pds-query-broker.git
 cd pds-query-broker
-cd docker && cp .env.example .env && docker compose up -d   # RabbitMQ (5672), catalog server (8090), AsyncAPI Studio
-./gradlew build   # planned — the broker/SDK implementation does not exist yet
+cd docker && cp .env.example .env && docker compose up -d   # RabbitMQ (5672), catalog (8090), broker (8080), example connector (8082)
+cd .. && ./gradlew build   # unit + Testcontainers integration tests (needs a Docker daemon)
 ```
 
 ---

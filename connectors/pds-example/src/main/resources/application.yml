@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: pds-example-connector
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+
+pds:
+  connector:
+    pds-id: ${PDS_CONNECTOR_PDS_ID:PDS-EXAMPLE}
+    gpas-domain: ${PDS_CONNECTOR_GPAS_DOMAIN:https://ths.example.org/gpas/domain/PDS-EXAMPLE}
+    request-queue: req.${PDS_CONNECTOR_PDS_ID:PDS-EXAMPLE}
+    # Static synthetic pseudonym map — increment-1 THS stand-in (ADR-011).
+    pseudonyms:
+      PSN-EXAMPLE-0001: internal-0001
+      PSN-EXAMPLE-0002: internal-0002
+
+server:
+  port: 8082
+
+management:
+  server:
+    port: 8083
+  endpoints:
+    web:
+      exposure:
+        include: health,info

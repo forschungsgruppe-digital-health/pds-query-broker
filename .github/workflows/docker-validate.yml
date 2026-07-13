@@ -20,10 +20,16 @@ jobs:
         working-directory: docker
         run: docker compose config --quiet
 
-      - name: Validate Dockerfile
+      - name: Validate broker Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: docker/broker/Dockerfile
+          failure-threshold: warning
+
+      - name: Validate pds-example Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/pds-example/Dockerfile
           failure-threshold: warning
 
       - name: Validate RabbitMQ definitions.json
