@@ -117,7 +117,15 @@ class WalkingSkeletonIntegrationTest {
 
   @Test
   void aggregatesConditionsFromAddressedConnector() throws Exception {
-    Bundle request = request(pseudonym("PSN-EXAMPLE-0001", EXAMPLE_DOMAIN));
+    // Unique response queue so the routed-delivery assertion below cannot
+    // be satisfied by another test's message.
+    String responseQueue = "responses.it-happy";
+    org.springframework.amqp.rabbit.core.RabbitAdmin admin =
+        brokerContext.getBean(org.springframework.amqp.rabbit.core.RabbitAdmin.class);
+    admin.declareQueue(new org.springframework.amqp.core.Queue(responseQueue, true));
+
+    Bundle request =
+        request("amqp://rabbitmq/" + responseQueue, pseudonym("PSN-EXAMPLE-0001", EXAMPLE_DOMAIN));
 
     Bundle aggregated = postProcessMessage(request, 200);
 
@@ -132,6 +140,24 @@ class WalkingSkeletonIntegrationTest {
     aggregated
         .getEntry()
         .forEach(entry -> assertThat(entry.getFullUrl()).doesNotContain("urn:uuid:urn:uuid:"));
+
+    // ADR-009: the aggregated bundle must ALSO be delivered to the requester's
+    // response queue, correlated via the AMQP correlationId.
+    org.springframework.amqp.rabbit.core.RabbitTemplate rabbit =
+        brokerContext.getBean(org.springframework.amqp.rabbit.core.RabbitTemplate.class);
+    org.springframework.amqp.core.Message routed = rabbit.receive(responseQueue, 5000);
+    assertThat(routed).as("aggregated bundle routed to %s", responseQueue).isNotNull();
+    String expectedCorrelation =
+        "urn:uuid:"
+            + BrokerMessages.messageHeaderOf(request).orElseThrow().getIdElement().getIdPart();
+    assertThat(routed.getMessageProperties().getCorrelationId()).isEqualTo(expectedCorrelation);
+    Bundle routedBundle =
+        (Bundle)
+            FHIR.newJsonParser()
+                .parseResource(new String(routed.getBody(), java.nio.charset.StandardCharsets.UTF_8));
+    MessageHeader routedHeader = BrokerMessages.messageHeaderOf(routedBundle).orElseThrow();
+    assertThat(routedHeader.getResponse().getCode()).isEqualTo(ResponseType.OK);
+    assertThat(resourcesOf(routedBundle, Condition.class)).hasSize(2);
   }
 
   @Test
@@ -244,6 +270,10 @@ class WalkingSkeletonIntegrationTest {
   }
 
   private static Bundle request(Identifier... pseudonyms) {
+    return request("amqp://rabbitmq/responses.portal", pseudonyms);
+  }
+
+  private static Bundle request(String destinationEndpoint, Identifier... pseudonyms) {
     Parameters parameters = new Parameters();
     for (Identifier pseudonym : pseudonyms) {
       parameters.addParameter().setName("pseudonym").setValue(pseudonym);
@@ -251,8 +281,8 @@ class WalkingSkeletonIntegrationTest {
     return BrokerMessages.requestBundle(
         GET_CONDITIONS,
         "Integration Test",
-        "amqp://rabbitmq/responses.portal",
-        "amqp://rabbitmq/responses.portal",
+        destinationEndpoint,
+        destinationEndpoint,
         parameters);
   }
 

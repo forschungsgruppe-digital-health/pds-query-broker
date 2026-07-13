@@ -28,6 +28,9 @@ on:
       - 'version.txt'
       - '.github/workflows/ci-gradle.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Gradle build + tests

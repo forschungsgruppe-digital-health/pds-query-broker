@@ -5,7 +5,6 @@ import de.tudresden.fgdh.querybroker.sdk.BrokerMessages;
 import de.tudresden.fgdh.querybroker.sdk.BrokerProtocol;
 import de.tudresden.fgdh.querybroker.sdk.BrokerProtocol.ErrorCode;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,7 +16,6 @@ import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
 import org.hl7.fhir.r4.model.OperationOutcome.IssueType;
 import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.Resource;
-import org.hl7.fhir.r4.model.UriType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.MessageBuilder;
@@ -70,7 +68,10 @@ public class QueryBrokerService {
     registry
         .findOperation(eventUri)
         .orElseThrow(
-            () -> new BadRequestException("Unknown operation (not in catalog): " + eventUri));
+            () ->
+                new BadRequestException(
+                    "Unknown operation (not in catalog): " + eventUri,
+                    ErrorCode.UNSUPPORTED_OPERATION));
 
     // Expected responders = distinct pseudonym domains (broadcast + self-filtering).
     Set<String> domains = new LinkedHashSet<>();
@@ -144,19 +145,9 @@ public class QueryBrokerService {
       }
     }
 
-    Bundle aggregated =
-        BrokerMessages.responseBundle(
-            requestHeader, "Query Broker", brokerEndpoint(), code, payload);
-    if (code == ResponseType.FATALERROR) {
-      BrokerMessages.messageHeaderOf(aggregated)
-          .ifPresent(
-              h -> {
-                h.setEvent(new UriType(BrokerProtocol.OPERATION_ERROR_EVENT));
-                h.setDefinition(BrokerProtocol.OPERATION_ERROR_MESSAGE_DEFINITION);
-              });
-    }
-    aggregated.setTimestamp(new Date());
-    return aggregated;
+    // responseBundle() already applies the OperationError event semantics for FATALERROR.
+    return BrokerMessages.responseBundle(
+        requestHeader, "Query Broker", brokerEndpoint(), code, payload);
   }
 
   private void publish(
@@ -188,8 +179,19 @@ public class QueryBrokerService {
 
   /** 400-level protocol violation, mapped by {@link MessagingController}. */
   public static final class BadRequestException extends RuntimeException {
+    private final ErrorCode errorCode;
+
     public BadRequestException(String message) {
+      this(message, ErrorCode.VALIDATION_ERROR);
+    }
+
+    public BadRequestException(String message, ErrorCode errorCode) {
       super(message);
+      this.errorCode = errorCode;
+    }
+
+    public ErrorCode errorCode() {
+      return errorCode;
     }
   }
 }

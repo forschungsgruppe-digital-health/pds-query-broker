@@ -45,14 +45,22 @@ public class MessagingController {
     return ResponseEntity.ok(fhirContext.newJsonParser().encodeResourceToString(aggregated));
   }
 
-  @ExceptionHandler({
-    QueryBrokerService.BadRequestException.class,
-    ca.uhn.fhir.parser.DataFormatException.class
-  })
-  ResponseEntity<String> badRequest(Exception e) {
+  @ExceptionHandler(QueryBrokerService.BadRequestException.class)
+  ResponseEntity<String> protocolViolation(QueryBrokerService.BadRequestException e) {
+    IssueType issueType =
+        e.errorCode() == ErrorCode.UNSUPPORTED_OPERATION ? IssueType.NOTSUPPORTED : IssueType.INVALID;
+    return badRequest(issueType, e.errorCode(), e.getMessage());
+  }
+
+  @ExceptionHandler(ca.uhn.fhir.parser.DataFormatException.class)
+  ResponseEntity<String> unparseable(ca.uhn.fhir.parser.DataFormatException e) {
+    return badRequest(IssueType.INVALID, ErrorCode.VALIDATION_ERROR, e.getMessage());
+  }
+
+  private ResponseEntity<String> badRequest(
+      IssueType issueType, ErrorCode errorCode, String diagnostics) {
     OperationOutcome outcome =
-        BrokerMessages.operationOutcome(
-            IssueSeverity.ERROR, IssueType.INVALID, ErrorCode.VALIDATION_ERROR, e.getMessage());
+        BrokerMessages.operationOutcome(IssueSeverity.ERROR, issueType, errorCode, diagnostics);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .header("Content-Type", FHIR_JSON)
         .body(fhirContext.newJsonParser().encodeResourceToString(outcome));
