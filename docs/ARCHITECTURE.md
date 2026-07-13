@@ -1,120 +1,120 @@
-# Architekturdokumentation — Query Broker
+# Architecture Documentation — Query Broker
 
-> Version 0.2.0 · 2026-05-04 · Struktur nach [arc42](https://arc42.org/) Template v9.0 (Juli 2025). Nicht alle Abschnitte sind in der aktuellen Projektphase befüllt.
+> Version 0.2.0 · 2026-05-04 · Structured according to the [arc42](https://arc42.org/) template v9.0 (July 2025). Not all sections are filled in at the current project stage.
 
 ---
 
-## 1. Einführung und Ziele
+## 1. Introduction and Goals
 
-### 1.1 Aufgabenstellung
+### 1.1 Requirements Overview
 
-Der Query Broker verteilt Datenanfragen eines Patientenportals (und potenzieller Drittanwendungen) an mehrere Primärdatenquellen (PDS, Primary Data Source), aggregiert deren Antworten und liefert normalisierte, profilkonforme FHIR R4 Bundles zurück.
+The Query Broker distributes data requests from a patient portal (and potential third-party applications) to multiple primary data sources (PDS), aggregates their responses, and returns normalized, profile-conformant FHIR R4 Bundles.
 
-### 1.2 Qualitätsziele
+### 1.2 Quality Goals
 
-| Priorität | Qualitätsziel | Szenario |
+| Priority | Quality goal | Scenario |
 |-----------|---------------|----------|
-| 1 | **Interoperabilität** | Alle Nachrichten und Antworten sind FHIR R4 konform; Antwort-Ressourcen entsprechen den konfigurierten Profilen. |
-| 2 | **Erweiterbarkeit** | Eine neue Operation kann durch Anlegen von FHIR-Ressourcen im Katalog hinzugefügt werden — ohne Rebuild bestehender Connectoren. |
-| 3 | **Entkopplung** | Ein neuer PDS-Standort wird durch Deployment eines Connectors und Einrichten einer RabbitMQ-Queue angebunden — ohne Änderung am Broker. |
-| 4 | **Ausfalltoleranz** | Der Broker liefert Partial Results mit `OperationOutcome`, wenn einzelne PDS nicht antworten. |
-| 5 | **Nachvollziehbarkeit** | Jede Ressource im aggregierten Bundle trägt ihre Herkunft (PDS, Quellsystem) und ein Verarbeitungsprotokoll (Validierung, Aggregation). |
+| 1 | **Interoperability** | All messages and responses are FHIR R4 conformant; response resources conform to the configured profiles. |
+| 2 | **Extensibility** | A new operation can be added by creating FHIR resources in the catalog — without rebuilding existing connectors. |
+| 3 | **Decoupling** | A new PDS site is onboarded by deploying a connector and setting up a RabbitMQ queue — without changing the broker. |
+| 4 | **Fault tolerance** | The broker delivers partial results with `OperationOutcome` when individual PDS do not respond. |
+| 5 | **Traceability** | Every resource in the aggregated Bundle carries its origin (PDS, source system) and a processing log (validation, aggregation). |
 
-### 1.3 Stakeholder
+### 1.3 Stakeholders
 
-| Rolle | Erwartung |
+| Role | Expectation |
 |-------|-----------|
-| PDS-Entwickler | Klare Connector-Schnittstelle, SDK mit generiertem Stub, Konformitätstests |
-| Projektkern-Entwickler | Erweiterbare Architektur, standardbasiert, wartbar |
-| Patientenportal-Team | Stabile BFF-API, FHIR-konforme Antworten |
-| Datenschutzbeauftragte | Pseudonymisierte Datenverarbeitung, kein zentraler Datenspeicher |
+| PDS developers | Clear connector interface, SDK with generated stub, conformance tests |
+| Project core developers | Extensible architecture, standards-based, maintainable |
+| Patient portal team | Stable BFF API, FHIR-conformant responses |
+| Data protection officers | Pseudonymized data processing, no central data store |
 
 ---
 
-## 2. Randbedingungen
+## 2. Constraints
 
-### 2.1 Technische Randbedingungen
+### 2.1 Technical Constraints
 
-| Randbedingung | Erläuterung |
+| Constraint | Explanation |
 |---------------|-------------|
-| Daten in PDS nicht als FHIR | PDS-Datensysteme sind heterogen (i2b2, OMOP CDM, SQL, HL7 v2). Connectoren müssen als Adapter übersetzen. |
-| Pseudonymisierung via MOSAiC | Patientenidentitäten werden über föderierte THS (E-PIX/gPAS) aufgelöst. Jedes PDS hat eigene gPAS-Domäne. |
-| FHIR R4 als kanonisches Format | Alle Ausgaben sind FHIR R4, optional profiliert nach projektspezifischen StructureDefinitions. |
-| Sicherheit nachrangig | Datenschutz/Autorisierung sind aktuell nicht im Scope. |
+| Data in PDS not stored as FHIR | PDS data systems are heterogeneous (i2b2, OMOP CDM, SQL, HL7 v2). Connectors must translate as adapters. |
+| Pseudonymization via MOSAiC | Patient identities are resolved via the federated trusted third party (THS) (E-PIX/gPAS). Each PDS has its own gPAS domain. |
+| FHIR R4 as the canonical format | All outputs are FHIR R4, optionally profiled according to project-specific StructureDefinitions. |
+| Security deprioritized | Data protection/authorization are currently out of scope. |
 
-### 2.2 Organisatorische Randbedingungen
+### 2.2 Organizational Constraints
 
-| Randbedingung | Erläuterung |
+| Constraint | Explanation |
 |---------------|-------------|
-| Profilkontext | Profile, Terminologien und Governance werden projektspezifisch festgelegt. Beispiel: MII-Kerndatensatz im MII-Kontext, US Core im US-Kontext, eigene Projektprofile. |
-| Dezentrale PDS-Verantwortung | Jeder PDS-Standort verantwortet seinen Connector eigenständig. |
+| Profile context | Profiles, terminologies, and governance are defined per project. Example: MII core data set in the MII context, US Core in the US context, custom project profiles. |
+| Decentralized PDS responsibility | Each PDS site is independently responsible for its connector. |
 
-### 2.3 Konventionen
+### 2.3 Conventions
 
-| Konvention | Regel |
+| Convention | Rule |
 |------------|-------|
-| OperationDefinition-Namen | PascalCase, Regex `[A-Z]([A-Za-z0-9_]){1,254}` (FHIR Constraint opd-0). Beispiel: `GetConditions`. |
-| Kanonische URLs | `https://{project}.example.org/fhir/{ResourceType}/{Name}` |
-| Profil-URLs | Projektspezifisch. Beispiel MII KDS: `https://www.medizininformatik-initiative.de/fhir/core/modul-{name}/StructureDefinition/{Ressource}` |
-| Pseudonym-Identifier | `system` = gPAS-Domäne (`https://ths.example.org/gpas/domain/{PDS-ID}`), `value` = Pseudonym |
+| OperationDefinition names | PascalCase, regex `[A-Z]([A-Za-z0-9_]){1,254}` (FHIR constraint opd-0). Example: `GetConditions`. |
+| Canonical URLs | `https://{project}.example.org/fhir/{ResourceType}/{Name}` |
+| Profile URLs | Project-specific. Example MII KDS: `https://www.medizininformatik-initiative.de/fhir/core/modul-{name}/StructureDefinition/{Ressource}` |
+| Pseudonym identifier | `system` = gPAS domain (`https://ths.example.org/gpas/domain/{PDS-ID}`), `value` = pseudonym |
 
 ---
 
-## 3. Kontextabgrenzung
+## 3. Context and Scope
 
-### 3.1 Fachlicher Kontext
+### 3.1 Business Context
 
 ```mermaid
 graph LR
     PAT(("Patient"))
-    PORTAL["Patientenportal"]
+    PORTAL["Patient Portal"]
     BROKER["Query Broker"]
     PDS_A["PDS A"]
     PDS_B["PDS B"]
-    THS["Föd. THS<br/>(MOSAiC)"]
+    THS["Fed. THS<br/>(MOSAiC)"]
 
-    PAT -->|"Login / Datenanfrage"| PORTAL
-    PORTAL -->|"Operationsaufruf"| BROKER
+    PAT -->|"Login / data request"| PORTAL
+    PORTAL -->|"Operation invocation"| BROKER
     BROKER -->|"FHIR Message"| PDS_A
     BROKER -->|"FHIR Message"| PDS_B
-    BROKER -->|"PSN-Lookup"| THS
+    BROKER -->|"PSN lookup"| THS
     PDS_A -->|"FHIR Response"| BROKER
     PDS_B -->|"FHIR Response"| BROKER
-    BROKER -->|"Aggregiertes Bundle"| PORTAL
-    PORTAL -->|"Daten anzeigen"| PAT
+    BROKER -->|"Aggregated Bundle"| PORTAL
+    PORTAL -->|"Display data"| PAT
 ```
 
-| Externer Partner | Schnittstelle | Format |
+| External partner | Interface | Format |
 |------------------|---------------|--------|
-| Patientenportal | REST (BFF-API) | JSON (FHIR-basiert) |
-| PDS-Connectoren | AMQP (RabbitMQ) | FHIR Message Bundle (`application/fhir+json`) |
-| Föderierte THS | REST (E-PIX API) | E-PIX-spezifisch |
-| Nachrichtenkatalog | FHIR REST API | FHIR R4 (OperationDefinition, MessageDefinition, GraphDefinition) |
+| Patient portal | REST (BFF API) | JSON (FHIR-based) |
+| PDS connectors | AMQP (RabbitMQ) | FHIR Message Bundle (`application/fhir+json`) |
+| Federated THS | REST (E-PIX API) | E-PIX-specific |
+| Message catalog | FHIR REST API | FHIR R4 (OperationDefinition, MessageDefinition, GraphDefinition) |
 
-### 3.2 Technischer Kontext
+### 3.2 Technical Context
 
 ```mermaid
 graph TB
-    subgraph "Integrationsschicht"
+    subgraph "Integration layer"
         BFF["BFF<br/><i>Spring Boot</i>"]
         BROKER["Query Broker<br/><i>Spring Boot · Spring AMQP</i>"]
         MQ[("RabbitMQ<br/><i>AMQP 0-9-1</i>")]
     end
 
-    subgraph "Nachrichtenkatalog"
+    subgraph "Message catalog"
         CATALOG[("HAPI FHIR Server")]
         OPDEF["OperationDefinition<br/><i>GetConditions etc.</i>"]
         MSGDEF["MessageDefinition"]
         GRAPHDEF["GraphDefinition"]
-        KDS["Projektprofile"]
+        KDS["Project profiles"]
         MSGDEF -->|"eventUri"| OPDEF
         OPDEF -->|"targetProfile"| KDS
         MSGDEF -->|"focus.profile"| KDS
         GRAPHDEF -->|"target.profile"| KDS
     end
 
-    subgraph "PDS-Standort"
-        CONN["Connector<br/><i>Connector-SDK</i>"]
+    subgraph "PDS site"
+        CONN["Connector<br/><i>Connector SDK</i>"]
         CAPSTMT["CapabilityStatement<br/><i>.messaging.supportedMessage</i>"]
         LTHS["gPAS"]
         SRC[("i2b2 / OMOP / SQL")]
@@ -133,24 +133,24 @@ graph TB
 
 ---
 
-## 4. Lösungsstrategie
+## 4. Solution Strategy
 
-| Entscheidung | Begründung |
+| Decision | Rationale |
 |--------------|------------|
-| **FHIR Messaging statt proprietärem Envelope** | Ein Format, ein Parser (HAPI FHIR). OperationDefinitions können laut FHIR-Spec via Messaging aufgerufen werden ([FHIR R4 Messaging](https://hl7.org/fhir/R4/messaging.html)). |
-| **Tripel OperationDefinition + MessageDefinition + GraphDefinition** | OperationDefinition allein beschreibt nicht den vollständigen Nachrichtenvertrag. MessageDefinition formalisiert Pflicht-Payloads und erlaubte Antworten. GraphDefinition formalisiert den Payload-Graphen. |
-| **Profilbindung über `targetProfile`** | FHIR-nativer Mechanismus. Profile sind projektspezifisch wählbar (z.B. MII KDS, US Core, eigene Profile). Validierung mit Standard-FHIR-Tooling (HAPI Validator). Operationen ohne `targetProfile` liefern FHIR-Basisressourcen. |
-| **AsyncAPI nur für Transport** | Stabile AMQP-Topologie. Nachrichtensemantik lebt in FHIR-Ressourcen — neue Operationen erfordern keinen Rebuild. |
-| **Adapter-Pattern für Connectoren** | PDS-Systeme sprechen nicht FHIR. Strukturelle Übersetzung auf beiden Seiten nötig (Eingang und Ausgang). |
-| **Broadcast mit Self-Filtering** | Fanout Exchange minimiert Konfigurationsaufwand. Connector filtert nach gPAS-Domäne und `CapabilityStatement.messaging`. |
-| **CapabilityStatement.messaging statt proprietärer Discovery** | FHIR-nativer Mechanismus für Capability-Deklaration ([FHIR R4 CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html)). |
-| **Provenance + AuditEvent für Herkunft und Verarbeitungsprotokoll** | `Provenance` dokumentiert Datenherkunft pro Ressource (PDS, Quellsystem, Transformation). `AuditEvent` dokumentiert Verarbeitungsschritte (Query, Validierung, Aggregation). Beides sind FHIR-R4-Ressourcen und werden als Bundle-Einträge transportiert — kein proprietäres Logging ([FHIR R4 Provenance](https://hl7.org/fhir/R4/provenance.html), [FHIR R4 AuditEvent](https://hl7.org/fhir/R4/auditevent.html)). |
+| **FHIR Messaging instead of a proprietary envelope** | One format, one parser (HAPI FHIR). According to the FHIR spec, OperationDefinitions can be invoked via messaging ([FHIR R4 Messaging](https://hl7.org/fhir/R4/messaging.html)). |
+| **Triple of OperationDefinition + MessageDefinition + GraphDefinition** | An OperationDefinition alone does not describe the complete message contract. MessageDefinition formalizes mandatory payloads and allowed responses. GraphDefinition formalizes the payload graph. |
+| **Profile binding via `targetProfile`** | FHIR-native mechanism. Profiles are selectable per project (e.g. MII KDS, US Core, custom profiles). Validation with standard FHIR tooling (HAPI Validator). Operations without `targetProfile` return base FHIR resources. |
+| **AsyncAPI for transport only** | Stable AMQP topology. Message semantics live in FHIR resources — new operations require no rebuild. |
+| **Adapter pattern for connectors** | PDS systems do not speak FHIR. Structural translation is needed on both sides (inbound and outbound). |
+| **Broadcast with self-filtering** | Fanout Exchange minimizes configuration effort. The connector filters by gPAS domain and `CapabilityStatement.messaging`. |
+| **CapabilityStatement.messaging instead of proprietary discovery** | FHIR-native mechanism for capability declaration ([FHIR R4 CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html)). |
+| **Provenance + AuditEvent for origin and processing log** | `Provenance` documents data origin per resource (PDS, source system, transformation). `AuditEvent` documents processing steps (query, validation, aggregation). Both are FHIR R4 resources and are transported as Bundle entries — no proprietary logging ([FHIR R4 Provenance](https://hl7.org/fhir/R4/provenance.html), [FHIR R4 AuditEvent](https://hl7.org/fhir/R4/auditevent.html)). |
 
 ---
 
-## 5. Bausteinsicht
+## 5. Building Block View
 
-### 5.1 Ebene 1 — Gesamtsystemzerlegung
+### 5.1 Level 1 — Overall System Decomposition
 
 ```mermaid
 graph TB
@@ -158,10 +158,10 @@ graph TB
         BFF["BFF"]
         BROKER["Query Broker Service"]
         MQ[("RabbitMQ")]
-        CATALOG[("Nachrichtenkatalog")]
+        CATALOG[("Message catalog")]
     end
 
-    FTHS["Föd. THS (MOSAiC)"]
+    FTHS["Fed. THS (MOSAiC)"]
     CONN_A["PDS-A Connector"]
     CONN_B["PDS-B Connector"]
 
@@ -172,25 +172,25 @@ graph TB
     BFF --> FTHS
 ```
 
-| Baustein | Verantwortlichkeit | Schnittstellen | Technologie |
+| Building block | Responsibility | Interfaces | Technology |
 |----------|-------------------|----------------|-------------|
-| **BFF** | Session, PSN-Lookup, Response-Shaping | REST ← Portal, REST → Broker, REST → THS | Spring Boot, HAPI FHIR |
-| **Query Broker Service** | Validierung (MessageDefinition), Routing (CapabilityStatement), Fan-out, Aggregation, Profilvalidierung. Erzeugt `AuditEvent`-Ressourcen für Request-Eingang, Fan-out, Aggregation und Response-Ausgang. Erzeugt `Provenance` für den Aggregationsschritt. | AMQP → RabbitMQ, FHIR REST → Katalog, REST → Connector `/metadata` | Spring Boot, Spring AMQP, HAPI FHIR |
-| **RabbitMQ** | Nachrichtentransport (Fanout/Topic), Queue-Isolation, DLQ | AMQP 0-9-1 | RabbitMQ 3.12+, AsyncAPI 3.0 |
-| **Nachrichtenkatalog** | OperationDefinition, MessageDefinition, GraphDefinition, projektspezifische Profile | FHIR REST API | HAPI FHIR Server, FHIR-Profilpakete |
-| **PDS Connector** | Self-Filtering, Capability-Check, Dispatch, Adapter, Profilvalidierung vor Versand. Erzeugt `Provenance` pro fachlicher Ressource (Herkunft: PDS, Quellsystem) und `AuditEvent` für Query-Ausführung und Validierungsergebnis. | AMQP ← RabbitMQ, REST `/metadata`, REST → lok. THS | Connector-SDK (generiert aus AsyncAPI), Spring Boot, HAPI FHIR |
-| **Föd. THS** | Pseudonym-Auflösung über PDS-Grenzen | REST API (E-PIX) | MOSAiC E-PIX, gPAS |
+| **BFF** | Session, PSN lookup, response shaping | REST ← portal, REST → broker, REST → THS | Spring Boot, HAPI FHIR |
+| **Query Broker Service** | Validation (MessageDefinition), routing (CapabilityStatement), fan-out, aggregation, profile validation. Creates `AuditEvent` resources for request receipt, fan-out, aggregation, and response dispatch. Creates `Provenance` for the aggregation step. | AMQP → RabbitMQ, FHIR REST → catalog, REST → connector `/metadata` | Spring Boot, Spring AMQP, HAPI FHIR |
+| **RabbitMQ** | Message transport (fanout/topic), queue isolation, DLQ | AMQP 0-9-1 | RabbitMQ 3.12+, AsyncAPI 3.0 |
+| **Message catalog** | OperationDefinition, MessageDefinition, GraphDefinition, project-specific profiles | FHIR REST API | HAPI FHIR Server, FHIR profile packages |
+| **PDS Connector** | Self-filtering, capability check, dispatch, adapter, profile validation before dispatch. Creates `Provenance` per business resource (origin: PDS, source system) and `AuditEvent` for query execution and validation result. | AMQP ← RabbitMQ, REST `/metadata`, REST → local THS | Connector SDK (generated from AsyncAPI), Spring Boot, HAPI FHIR |
+| **Fed. THS** | Pseudonym resolution across PDS boundaries | REST API (E-PIX) | MOSAiC E-PIX, gPAS |
 
-### 5.2 Ebene 2 — Nachrichtenkatalog (Whitebox)
+### 5.2 Level 2 — Message Catalog (Whitebox)
 
 ```mermaid
 graph LR
-    subgraph "Nachrichtenkatalog"
-        OPDEF["OperationDefinition<br/><i>z.B. GetConditions</i>"]
+    subgraph "Message catalog"
+        OPDEF["OperationDefinition<br/><i>e.g. GetConditions</i>"]
         MSGDEF_REQ["MessageDefinition<br/><i>GetConditionsRequest</i>"]
         MSGDEF_RESP["MessageDefinition<br/><i>GetConditionsResponse</i>"]
         GRAPHDEF["GraphDefinition<br/><i>GetConditionsResponseGraph</i>"]
-        KDS["Projektprofile<br/><i>Diagnose · ObservationLab<br/>Procedure · Encounter · ...</i>"]
+        KDS["Project profiles<br/><i>Diagnose · ObservationLab<br/>Procedure · Encounter · ...</i>"]
     end
 
     MSGDEF_REQ -->|"eventUri"| OPDEF
@@ -201,55 +201,55 @@ graph LR
     GRAPHDEF -->|"target.profile"| KDS
 ```
 
-| Baustein | Verantwortlichkeit | FHIR-Referenz |
+| Building block | Responsibility | FHIR reference |
 |----------|-------------------|---------------|
-| **OperationDefinition** | Semantik: Parameter, Typen, Kardinalitäten, `targetProfile` → Projektprofil (optional) | [HL7 FHIR R4](https://hl7.org/fhir/R4/operationdefinition.html) |
-| **MessageDefinition (Request)** | Nachrichtenvertrag: `focus` (Pflicht-Payloads), `allowedResponse` | [HL7 FHIR R4](https://hl7.org/fhir/R4/messagedefinition.html) |
-| **MessageDefinition (Response)** | Antwortvertrag: `focus.profile` → Projektprofil (optional) | [HL7 FHIR R4](https://hl7.org/fhir/R4/messagedefinition.html) |
-| **GraphDefinition** | Payload-Struktur: Ressourcengraph, `target.profile` → Projektprofil (optional) | [HL7 FHIR R4](https://hl7.org/fhir/R4/graphdefinition.html) |
-| **Projektprofile** | FHIR StructureDefinitions für Output-Ressourcen (z.B. MII KDS, US Core, eigene Profile) | [Projektspezifisch] |
+| **OperationDefinition** | Semantics: parameters, types, cardinalities, `targetProfile` → project profile (optional) | [HL7 FHIR R4](https://hl7.org/fhir/R4/operationdefinition.html) |
+| **MessageDefinition (Request)** | Message contract: `focus` (mandatory payloads), `allowedResponse` | [HL7 FHIR R4](https://hl7.org/fhir/R4/messagedefinition.html) |
+| **MessageDefinition (Response)** | Response contract: `focus.profile` → project profile (optional) | [HL7 FHIR R4](https://hl7.org/fhir/R4/messagedefinition.html) |
+| **GraphDefinition** | Payload structure: resource graph, `target.profile` → project profile (optional) | [HL7 FHIR R4](https://hl7.org/fhir/R4/graphdefinition.html) |
+| **Project profiles** | FHIR StructureDefinitions for output resources (e.g. MII KDS, US Core, custom profiles) | [Project-specific] |
 
-### 5.3 Ebene 2 — PDS Connector (Whitebox)
+### 5.3 Level 2 — PDS Connector (Whitebox)
 
 ```mermaid
 graph TB
-    subgraph "Generierter Stub"
-        ABS["AbstractPdsConnector<br/><i>AMQP Listener · Pseudonym-Filter<br/>Capability-Check · Profilvalidierung</i>"]
+    subgraph "Generated stub"
+        ABS["AbstractPdsConnector<br/><i>AMQP listener · pseudonym filter<br/>capability check · profile validation</i>"]
     end
-    subgraph "PDS-Entwickler"
-        MAP["OperationHandler-Map<br/><i>GetConditions → Handler<br/>... → Handler</i>"]
-        H["Konkreter Handler<br/><i>lok. THS → DB-Query → FHIR</i>"]
+    subgraph "PDS developer"
+        MAP["OperationHandler map<br/><i>GetConditions → handler<br/>... → handler</i>"]
+        H["Concrete handler<br/><i>local THS → DB query → FHIR</i>"]
     end
-    subgraph "Extern"
-        CAT["Nachrichtenkatalog"]
+    subgraph "External"
+        CAT["Message catalog"]
         LTHS["gPAS"]
-        SRC[("Lokales System")]
+        SRC[("Local system")]
     end
 
-    ABS -->|"delegiert"| MAP --> H
+    ABS -->|"delegates"| MAP --> H
     H --> LTHS --> SRC
-    ABS -->|"targetProfile laden"| CAT
+    ABS -->|"load targetProfile"| CAT
 ```
 
-| Baustein | Verantwortlichkeit | Technologie |
+| Building block | Responsibility | Technology |
 |----------|-------------------|-------------|
-| **AbstractPdsConnector** | FHIR Message Parsing, gPAS-Domäne filtern, Capability-Check, `targetProfile`-Validierung, `Provenance`-Erzeugung pro Ressource, `AuditEvent`-Erzeugung für Query und Validierung | Connector-SDK (generiert), HAPI FHIR Validator |
+| **AbstractPdsConnector** | FHIR message parsing, gPAS domain filtering, capability check, `targetProfile` validation, `Provenance` creation per resource, `AuditEvent` creation for query and validation | Connector SDK (generated), HAPI FHIR Validator |
 | **OperationHandler** | Interface: `Bundle execute(String pseudonym, Parameters params)` | `@FunctionalInterface` |
-| **Konkreter Handler** | Adapter: lokales System → FHIR (profilkonform, falls `targetProfile` deklariert). Setzt `Resource.meta.source` auf Connector-URL. | Vom PDS-Entwickler, HAPI FHIR |
+| **Concrete handler** | Adapter: local system → FHIR (profile-conformant if `targetProfile` is declared). Sets `Resource.meta.source` to the connector URL. | Provided by the PDS developer, HAPI FHIR |
 
 ---
 
-## 6. Laufzeitsicht
+## 6. Runtime View
 
-### 6.1 Szenario: Diagnosen abrufen (`$GetConditions`)
+### 6.1 Scenario: Retrieve Diagnoses (`$GetConditions`)
 
 ```mermaid
 sequenceDiagram
     participant P as Portal
     participant B as BFF
-    participant THS as Föd. THS
+    participant THS as Fed. THS
     participant QB as Query Broker
-    participant CAT as Katalog
+    participant CAT as Catalog
     participant MQ as RabbitMQ
     participant CA as PDS-A Connector
     participant CB as PDS-B Connector
@@ -259,193 +259,193 @@ sequenceDiagram
     THS-->>B: {PDS-A: PSN-A-8x3k, PDS-B: PSN-B-m9zq}
     B->>QB: FHIR Message (eventUri: .../GetConditions)
 
-    Note over QB: AuditEvent: Request empfangen
+    Note over QB: AuditEvent: request received
 
     QB->>CAT: GET /MessageDefinition/GetConditionsRequest
     CAT-->>QB: MessageDefinition + OperationDefinition
 
     QB->>MQ: Publish pds.broadcast
-    Note over QB: AuditEvent: Fan-out an 2 PDS
+    Note over QB: AuditEvent: fan-out to 2 PDS
 
     par Broadcast
         MQ->>CA: FHIR Message Bundle
         MQ->>CB: FHIR Message Bundle
     end
 
-    CA->>CA: gPAS-Domain PDS-A ✓ → Handler
-    Note over CA: AuditEvent: Query-Start (OMOP CDM)
-    CA->>CA: DB-Query → FHIR Conditions
-    Note over CA: Provenance pro Condition erzeugen<br/>(agent=PDS-A, source=OMOP)
-    CA->>CA: Profilvalidierung ✓
-    Note over CA: AuditEvent: Validierung bestanden
+    CA->>CA: gPAS domain PDS-A ✓ → handler
+    Note over CA: AuditEvent: query start (OMOP CDM)
+    CA->>CA: DB query → FHIR Conditions
+    Note over CA: Create Provenance per Condition<br/>(agent=PDS-A, source=OMOP)
+    CA->>CA: Profile validation ✓
+    Note over CA: AuditEvent: validation passed
     CA-->>MQ: Response (Conditions + Provenances + AuditEvents)
 
-    CB->>CB: gPAS-Domain PDS-B ✓ → Handler
+    CB->>CB: gPAS domain PDS-B ✓ → handler
     CB-->>MQ: Response (Conditions + Provenances + AuditEvents)
 
-    MQ-->>QB: 2 Responses
-    QB->>QB: Aggregation + GraphDefinition-Prüfung
-    Note over QB: AuditEvent: Aggregation (2/2 complete)<br/>Provenance: Aggregationsschritt
-    QB-->>B: Aggregiertes Bundle<br/>(Conditions + alle Provenances + alle AuditEvents)
+    MQ-->>QB: 2 responses
+    QB->>QB: Aggregation + GraphDefinition check
+    Note over QB: AuditEvent: aggregation (2/2 complete)<br/>Provenance: aggregation step
+    QB-->>B: Aggregated Bundle<br/>(Conditions + all Provenances + all AuditEvents)
     B-->>P: JSON
 ```
 
-### 6.2 Szenario: PDS unterstützt Operation nicht
+### 6.2 Scenario: PDS Does Not Support an Operation
 
-Der Connector antwortet mit `MessageHeader.response.code = fatal-error` und einer `OperationOutcome`-Ressource (`issue.code = not-supported`). Der Aggregator zählt diese Antwort als vollständig, schließt sie aber vom Ergebnis-Bundle aus.
+The connector responds with `MessageHeader.response.code = fatal-error` and an `OperationOutcome` resource (`issue.code = not-supported`). The aggregator counts this response as complete but excludes it from the result Bundle.
 
 ---
 
-## 7. Verteilungssicht
+## 7. Deployment View
 
 ```mermaid
 graph TB
-    subgraph "Zentrale Infrastruktur"
-        BFF_NODE["BFF Container"]
-        BROKER_NODE["Broker Container"]
-        MQ_NODE["RabbitMQ Container"]
-        CAT_NODE["HAPI FHIR Katalog"]
+    subgraph "Central infrastructure"
+        BFF_NODE["BFF container"]
+        BROKER_NODE["Broker container"]
+        MQ_NODE["RabbitMQ container"]
+        CAT_NODE["HAPI FHIR catalog"]
     end
 
-    subgraph "PDS-A Netzwerk"
-        CONN_A_NODE["Connector Container"]
-        THS_A["Lokale THS"]
-        DB_A[("Datensystem")]
+    subgraph "PDS-A network"
+        CONN_A_NODE["Connector container"]
+        THS_A["Local THS"]
+        DB_A[("Data system")]
     end
 
-    subgraph "PDS-B Netzwerk"
-        CONN_B_NODE["Connector Container"]
-        THS_B["Lokale THS"]
-        DB_B[("Datensystem")]
+    subgraph "PDS-B network"
+        CONN_B_NODE["Connector container"]
+        THS_B["Local THS"]
+        DB_B[("Data system")]
     end
 
     BFF_NODE --> BROKER_NODE --> MQ_NODE
     BROKER_NODE --> CAT_NODE
-    MQ_NODE ---|"AMQP (ausgehend vom PDS)"| CONN_A_NODE
-    MQ_NODE ---|"AMQP (ausgehend vom PDS)"| CONN_B_NODE
+    MQ_NODE ---|"AMQP (outbound from the PDS)"| CONN_A_NODE
+    MQ_NODE ---|"AMQP (outbound from the PDS)"| CONN_B_NODE
     CONN_A_NODE --> THS_A --> DB_A
     CONN_B_NODE --> THS_B --> DB_B
 ```
 
-> PDS-Connectoren bauen **ausgehende** AMQP-Verbindungen zum zentralen RabbitMQ auf — keine eingehenden Verbindungen in PDS-Netze nötig. Das vereinfacht die Firewall-Konfiguration in Krankenhausnetzwerken erheblich.
+> PDS connectors establish **outbound** AMQP connections to the central RabbitMQ — no inbound connections into PDS networks are needed. This considerably simplifies firewall configuration in hospital networks.
 
 ---
 
-## 8. Querschnittliche Konzepte
+## 8. Cross-cutting Concepts
 
-> Die folgenden Konzepte greifen über mehrere Bausteine und Schichten hinweg.
+> The following concepts span multiple building blocks and layers.
 
 ```mermaid
 mindmap
-  root((Querschnittliche Konzepte))
+  root((Cross-cutting concepts))
     FHIR Messaging
       Bundle type message
       MessageHeader
       Parameters
-    Profilkonformität
+    Profile conformance
       targetProfile
       focus.profile
       target.profile
-    Namenskonventionen
+    Naming conventions
       PascalCase
       opd-0
-    Capability-Discovery
+    Capability discovery
       CapabilityStatement.messaging
       supportedMessage
-    Konformitätssicherung
-      Strukturell
-      Semantisch
-      Operativ
-    Fehlermodell
+    Conformance assurance
+      Structural
+      Semantic
+      Operational
+    Error model
       OperationOutcome
       response.code
-    Provenienz und Logging
+    Provenance and logging
       Provenance
       AuditEvent
       meta.source
-    Multi-Client-Routing
+    Multi-client routing
       MessageHeader.destination
       AMQP replyTo
-      systemspezifische Response-Queues
+      system-specific response queues
 ```
 
-### 8.1 FHIR Messaging als Nachrichtenformat
+### 8.1 FHIR Messaging as the Message Format
 
-Alle Nachrichten sind FHIR R4 Bundles vom Typ `message`. `MessageHeader.eventUri` referenziert die kanonische OperationDefinition-URL. Parameter und Pseudonyme werden als typisierte Einträge in einer `Parameters`-Ressource übertragen. Pseudonyme verwenden den FHIR-Datentyp `Identifier` mit `system` = gPAS-Domäne (vgl. [FHIR R4 Messaging](https://hl7.org/fhir/R4/messaging.html)).
+All messages are FHIR R4 Bundles of type `message`. `MessageHeader.eventUri` references the canonical OperationDefinition URL. Parameters and pseudonyms are transmitted as typed entries in a `Parameters` resource. Pseudonyms use the FHIR data type `Identifier` with `system` = gPAS domain (cf. [FHIR R4 Messaging](https://hl7.org/fhir/R4/messaging.html)).
 
-### 8.2 Profilkonformität
+### 8.2 Profile Conformance
 
-Die Profilbindung ist optional und projektspezifisch. Wenn ein `targetProfile` in der OperationDefinition deklariert ist, wird sie an drei Stellen durchgesetzt:
+Profile binding is optional and project-specific. If a `targetProfile` is declared in the OperationDefinition, it is enforced in three places:
 
-| Stelle | FHIR-Element | Wirkung |
+| Location | FHIR element | Effect |
 |--------|-------------|---------|
-| OperationDefinition | `return.part[].targetProfile` | Deklariert, welchem Profil Output-Ressourcen entsprechen müssen |
-| MessageDefinition (Response) | `focus[].profile` | Deklariert Profil für Ressourcen in der Antwortnachricht |
-| GraphDefinition | `link[].target[].profile` | Deklariert Profile für verknüpfte Ressourcen im Antwortgraphen |
+| OperationDefinition | `return.part[].targetProfile` | Declares which profile output resources must conform to |
+| MessageDefinition (Response) | `focus[].profile` | Declares the profile for resources in the response message |
+| GraphDefinition | `link[].target[].profile` | Declares profiles for linked resources in the response graph |
 
-Validierung erfolgt im generierten Connector-Stub vor dem Versand (HAPI FHIR Validator + Profilpakete als Dependency) und optional im Broker bei Empfang. Operationen ohne `targetProfile` überspringen die Validierung — der Handler liefert FHIR-Basisressourcen zurück.
+Validation takes place in the generated connector stub before dispatch (HAPI FHIR Validator + profile packages as a dependency) and optionally in the broker on receipt. Operations without `targetProfile` skip validation — the handler returns base FHIR resources.
 
-> Die Profile selbst sind projektspezifisch konfigurierbar: MII KDS im MII-Kontext, US Core für US-Projekte, IPS für internationale Szenarien, oder eigene Projektprofile. Sie werden als FHIR-Pakete (NPM-Format) im Katalog-Server installiert und im Connector-SDK als Dependency eingebunden.
+> The profiles themselves are configurable per project: MII KDS in the MII context, US Core for US projects, IPS for international scenarios, or custom project profiles. They are installed in the catalog server as FHIR packages (NPM format) and included in the Connector SDK as a dependency.
 
-### 8.3 OperationDefinition-Namenskonvention
+### 8.3 OperationDefinition Naming Convention
 
-OperationDefinition-Namen folgen dem FHIR-Namensschema (Constraint opd-0, Regex `[A-Z]([A-Za-z0-9_]){1,254}`). Die Konvention ist PascalCase ohne Unterstriche, analog zu den OperationDefinitions der FHIR-Kernspezifikation (vgl. [FHIR R4 OperationDefinition](https://hl7.org/fhir/R4/operationdefinition.html)).
+OperationDefinition names follow the FHIR naming scheme (constraint opd-0, regex `[A-Z]([A-Za-z0-9_]){1,254}`). The convention is PascalCase without underscores, analogous to the OperationDefinitions of the FHIR core specification (cf. [FHIR R4 OperationDefinition](https://hl7.org/fhir/R4/operationdefinition.html)).
 
-| Beispiele (korrekt) | Beispiele (falsch) |
+| Examples (correct) | Examples (incorrect) |
 |---------------------|--------------------|
 | `GetConditions` | ~~`GET_CONDITIONS`~~ |
 | `FetchSomething` | ~~`fetch-something`~~ |
-| `RetrieveData` | ~~`retrieveData`~~ (beginnt mit Kleinbuchstabe) |
+| `RetrieveData` | ~~`retrieveData`~~ (starts with a lowercase letter) |
 
-### 8.4 Capability-Discovery
+### 8.4 Capability Discovery
 
-Jeder Connector publiziert ein `CapabilityStatement` unter `GET /metadata` mit `messaging.supportedMessage`-Einträgen, die auf MessageDefinition-URLs zeigen. Der Broker queried diese beim Start und baut sein Routing-Verzeichnis dynamisch auf (vgl. [FHIR R4 CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html)).
+Each connector publishes a `CapabilityStatement` at `GET /metadata` with `messaging.supportedMessage` entries pointing to MessageDefinition URLs. The broker queries these at startup and builds its routing directory dynamically (cf. [FHIR R4 CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html)).
 
-### 8.5 Konformitätssicherung
+### 8.5 Conformance Assurance
 
-Drei Dimensionen: strukturell (Profilvalidierung), semantisch (Testdaten + CodeSystem-Prüfung), operativ (Mock-Broker-Integrationstests). Details in [CONTRIBUTING.md](../CONTRIBUTING.md#3-konformitätstests-ausführen).
+Three dimensions: structural (profile validation), semantic (test data + CodeSystem checks), operational (mock-broker integration tests). Details in [CONTRIBUTING.md](../CONTRIBUTING.md#3-run-conformance-tests).
 
-### 8.6 Fehlermodell
+### 8.6 Error Model
 
-Fehler werden als FHIR `OperationOutcome` übertragen. `MessageHeader.response.code` signalisiert `ok`, `transient-error` oder `fatal-error` (vgl. [FHIR R4 OperationOutcome](https://hl7.org/fhir/R4/operationoutcome.html)).
+Errors are transmitted as FHIR `OperationOutcome`. `MessageHeader.response.code` signals `ok`, `transient-error`, or `fatal-error` (cf. [FHIR R4 OperationOutcome](https://hl7.org/fhir/R4/operationoutcome.html)).
 
-### 8.7 Daten-Provenienz und Verarbeitungsprotokoll
+### 8.7 Data Provenance and Processing Log
 
-Zwei FHIR-Ressourcen decken Herkunftsnachweis und Logging ab — ohne proprietäre Mechanismen:
+Two FHIR resources cover proof of origin and logging — without proprietary mechanisms:
 
-**`Provenance`** dokumentiert, woher eine fachliche Ressource stammt (vgl. [FHIR R4 Provenance](https://hl7.org/fhir/R4/provenance.html)):
+**`Provenance`** documents where a business resource comes from (cf. [FHIR R4 Provenance](https://hl7.org/fhir/R4/provenance.html)):
 
-| Element | Verwendung |
+| Element | Usage |
 |---------|-----------|
-| `target[]` | Referenzen auf die fachlichen Ressourcen (Conditions, Observations etc.) |
-| `agent[].who` | `Reference(Organization)` — das PDS als Herkunftsorganisation |
-| `agent[].type` | `performer` (PDS), `assembler` (Connector-Software) |
-| `entity[].role` | `source` — das lokale Quellsystem |
-| `entity[].what.identifier` | System-URL und Record-ID im Quellsystem (z.B. OMOP `condition_occurrence/48291`) |
-| `activity` | Coding aus `v3-DataOperation` (`CREATE`, `UPDATE`) |
+| `target[]` | References to the business resources (Conditions, Observations, etc.) |
+| `agent[].who` | `Reference(Organization)` — the PDS as the originating organization |
+| `agent[].type` | `performer` (PDS), `assembler` (connector software) |
+| `entity[].role` | `source` — the local source system |
+| `entity[].what.identifier` | System URL and record ID in the source system (e.g. OMOP `condition_occurrence/48291`) |
+| `activity` | Coding from `v3-DataOperation` (`CREATE`, `UPDATE`) |
 
-**`AuditEvent`** dokumentiert, dass ein Verarbeitungsschritt stattgefunden hat (vgl. [FHIR R4 AuditEvent](https://hl7.org/fhir/R4/auditevent.html)):
+**`AuditEvent`** documents that a processing step took place (cf. [FHIR R4 AuditEvent](https://hl7.org/fhir/R4/auditevent.html)):
 
-| Element | Verwendung |
+| Element | Usage |
 |---------|-----------|
 | `action` | `E` (Execute) |
-| `period` | Start/Ende des Verarbeitungsschritts |
+| `period` | Start/end of the processing step |
 | `outcome` | `0` (success), `4` (minor failure), `8` (serious failure) |
-| `agent[].who` | `Reference(Device)` — Connector oder Broker als verarbeitende Instanz |
-| `entity[].detail[]` | Key-Value-Paare: `operation`, `pseudonym-domain`, `source-system`, `profile-validation`, `result-count`, `duration-ms` |
+| `agent[].who` | `Reference(Device)` — connector or broker as the processing instance |
+| `entity[].detail[]` | Key-value pairs: `operation`, `pseudonym-domain`, `source-system`, `profile-validation`, `result-count`, `duration-ms` |
 
-**Verantwortungsverteilung:**
+**Distribution of responsibilities:**
 
-| Komponente | Erzeugt | Inhalt |
+| Component | Creates | Content |
 |------------|---------|--------|
-| **PDS Connector** | `Provenance` (pro fachlicher Ressource) | PDS-Organisation, Quellsystem, Connector-Version, Transformationstyp |
-| **PDS Connector** | `AuditEvent` (pro Verarbeitungsschritt) | Query-Ausführung (Dauer, Quellsystem), Profilvalidierungsergebnis |
-| **Query Broker** | `AuditEvent` (pro Broker-Aktion) | Request-Eingang, Fan-out (Anzahl PDS), Aggregation (complete/partial, Timeouts) |
-| **Query Broker** | `Provenance` (Aggregationsschritt) | Welche PDS-Responses zusammengeführt wurden, Deduplizierung |
+| **PDS Connector** | `Provenance` (per business resource) | PDS organization, source system, connector version, transformation type |
+| **PDS Connector** | `AuditEvent` (per processing step) | Query execution (duration, source system), profile validation result |
+| **Query Broker** | `AuditEvent` (per broker action) | Request receipt, fan-out (number of PDS), aggregation (complete/partial, timeouts) |
+| **Query Broker** | `Provenance` (aggregation step) | Which PDS responses were merged, deduplication |
 
-**Leichtgewichtige Alternative:** Zusätzlich zur vollständigen `Provenance` setzt jeder Connector `Resource.meta.source` auf die Connector-URL. Das ermöglicht im aggregierten Bundle einen schnellen Blick, welche Ressource von welchem PDS stammt — ohne die Provenance-Kette traversieren zu müssen.
+**Lightweight alternative:** In addition to the full `Provenance`, each connector sets `Resource.meta.source` to the connector URL. This allows a quick look at which resource came from which PDS in the aggregated Bundle — without having to traverse the provenance chain.
 
-**Transport im Bundle:** Provenance und AuditEvent werden als reguläre Einträge im FHIR Message Bundle transportiert. `MessageHeader.focus` referenziert weiterhin nur die fachlichen Ressourcen. Provenance und AuditEvent sind über `Provenance.target` und `AuditEvent.entity.what` mit den fachlichen Ressourcen verknüpft:
+**Transport in the Bundle:** Provenance and AuditEvent are transported as regular entries in the FHIR Message Bundle. `MessageHeader.focus` continues to reference only the business resources. Provenance and AuditEvent are linked to the business resources via `Provenance.target` and `AuditEvent.entity.what`:
 
 ```mermaid
 graph TB
@@ -468,137 +468,137 @@ graph TB
 
 ---
 
-### 8.8 Multi-Client-Routing
+### 8.8 Multi-Client Routing
 
-Mehrere anfragende Systeme (Portal, CDSS, Forschungsportal) können gleichzeitig Anfragen über den Broker stellen. Das Routing der aggregierten Antwort zum richtigen System erfolgt über `MessageHeader.destination` (FHIR-Ebene) und AMQP `replyTo` (Transport-Ebene):
+Multiple requesting systems (portal, CDSS, research portal) can submit requests through the broker concurrently. Routing the aggregated response to the correct system is done via `MessageHeader.destination` (FHIR level) and AMQP `replyTo` (transport level):
 
-| Ebene | Mechanismus | Verantwortung |
+| Level | Mechanism | Responsibility |
 |-------|-------------|---------------|
-| FHIR | `MessageHeader.destination.endpoint` im Request → Response-Queue-URI | Anfragesystem setzt, Broker wertet aus |
-| AMQP | `replyTo`-Header im Request → Response-Queue-Name | BFF/Client setzt, Broker publiziert darauf |
-| Fallback | Requests ohne `destination` → `responses.default` | Broker verwendet Default-Queue |
+| FHIR | `MessageHeader.destination.endpoint` in the request → response queue URI | Requesting system sets it, broker evaluates it |
+| AMQP | `replyTo` header in the request → response queue name | BFF/client sets it, broker publishes to it |
+| Fallback | Requests without `destination` → `responses.default` | Broker uses the default queue |
 
-Jedes anfragende System erhält eine eigene Response-Queue (z.B. `responses.portal`, `responses.cdss`). Der ResponseAggregator korreliert die Connector-Antworten via `MessageHeader.response.identifier` und publiziert das aggregierte Bundle auf die Queue aus `destination.endpoint`.
-
----
-
-## 9. Architekturentscheidungen
-
-### ADR-001: Adapter-Pattern statt Proxy für Connectoren
-
-**Kontext:** PDS-Datensysteme sprechen nicht dasselbe Interface wie der Broker.
-**Entscheidung:** Adapter-Pattern — strukturelle Übersetzung auf beiden Seiten.
-**Begründung:** Proxy setzt gleiches Interface voraus. PDS mit heterogenen Systemen erfordern Übersetzung.
-
-### ADR-002: FHIR Message Bundles statt proprietärem JSON-Envelope
-
-**Kontext:** Nachrichten zwischen Broker und Connectoren benötigen ein definiertes Format.
-**Entscheidung:** FHIR Message Bundles mit MessageHeader, Parameters, OperationOutcome.
-**Begründung:** Ein Format, ein Parser. FHIR-Spec erlaubt Operation-Invocation via Messaging.
-
-### ADR-003: Tripel OperationDefinition + MessageDefinition + GraphDefinition
-
-**Kontext:** OperationDefinition allein beschreibt nicht den vollständigen Nachrichtenvertrag.
-**Entscheidung:** MessageDefinition für Pflicht-Payloads + erlaubte Antworten. GraphDefinition für Payload-Struktur.
-**Begründung:** Validierbar Verträge statt impliziter Konvention.
-
-### ADR-004: CapabilityStatement.messaging statt proprietärer Discovery
-
-**Kontext:** Connectoren müssen deklarieren, welche Operationen sie unterstützen.
-**Entscheidung:** `CapabilityStatement.messaging.supportedMessage`.
-**Begründung:** FHIR-nativ, standardisiert, querybar.
-
-### ADR-005: Pseudonyme als Parameters-Identifier (nicht MessageHeader-Extension)
-
-**Kontext:** Pseudonyme müssen in der Anfrage übertragen werden.
-**Entscheidung:** `parameter` mit Typ `Identifier`, `system` = gPAS-Domäne.
-**Begründung:** Pseudonyme sind Operationsparameter, keine Steuerungsinformation.
-
-### ADR-006: Fanout Exchange als Einstieg, Topic als Zielarchitektur
-
-**Kontext:** Einfacher Start vs. präzises Routing.
-**Entscheidung:** Fanout für Prototyp, Topic mit `pds.{pdsId}.*` bei Wachstum.
-
-### ADR-007: PascalCase-Namen für OperationDefinitions
-
-**Kontext:** FHIR Constraint opd-0 erfordert `[A-Z]([A-Za-z0-9_]){1,254}`.
-**Entscheidung:** PascalCase ohne Unterstriche (z.B. `GetConditions`), analog zur FHIR-Kernspezifikation.
-**Begründung:** Konsistenz mit HL7-Praxis. Unterstriche sind valide aber unüblich.
-
-### ADR-008: Provenance + AuditEvent statt proprietärem Logging
-
-**Kontext:** Datenherkunft und Verarbeitungsprotokoll müssen im aggregierten Bundle nachvollziehbar sein.
-**Entscheidung:** `Provenance` für Datenherkunft pro Ressource (Connector erzeugt), `AuditEvent` für Verarbeitungsschritte (Connector + Broker erzeugen). `Resource.meta.source` als leichtgewichtige Kurzreferenz. Alles als reguläre Bundle-Einträge transportiert.
-**Begründung:** FHIR-native Ressourcen, kein proprietäres Log-Format. Provenance und AuditEvent sind standardisierte FHIR R4 Ressourcen mit definierter Semantik ([FHIR R4 Provenance](https://hl7.org/fhir/R4/provenance.html), [FHIR R4 AuditEvent](https://hl7.org/fhir/R4/auditevent.html)). Der Weg jeder Ressource von der Quelle bis zur Anzeige ist rekonstruierbar.
-
-### ADR-009: MessageHeader.destination für Multi-Client-Routing
-
-**Kontext:** Mehrere anfragende Systeme (Portal, CDSS, Forschungsportal) können gleichzeitig Anfragen über den Broker stellen. Ohne Diskriminator auf Nachrichten- und Routingebene kann der Broker die aggregierte Antwort nicht dem richtigen anfragenden System zuordnen.
-**Entscheidung:** `MessageHeader.destination.endpoint` wird im Request vom anfragenden System auf eine systemspezifische Response-Queue gesetzt (z.B. `amqp://.../responses.portal`). Der Broker liest diesen Wert und publiziert das aggregierte Bundle auf die entsprechende Queue. Auf AMQP-Ebene korreliert `replyTo` parallel mit `destination.endpoint`. Für Requests ohne `destination` wird eine Default-Response-Queue verwendet (`responses.default`).
-**Begründung:** FHIR `MessageHeader.destination` ist der standardisierte Mechanismus für Nachrichtenrouting ([FHIR R4 MessageHeader.destination](https://hl7.org/fhir/R4/messageheader-definitions.html#MessageHeader.destination)). Die Kombination mit AMQP `replyTo` sichert Konsistenz auf beiden Ebenen (FHIR-Semantik + Transport).
+Each requesting system gets its own response queue (e.g. `responses.portal`, `responses.cdss`). The ResponseAggregator correlates the connector responses via `MessageHeader.response.identifier` and publishes the aggregated Bundle to the queue from `destination.endpoint`.
 
 ---
 
-## 10. Qualitätsanforderungen
+## 9. Architecture Decisions
 
-> Abschnitt 10 folgt der arc42 v9.0-Struktur: 10.1 gibt einen Überblick über die Qualitätsanforderungen nach Kategorien (angelehnt an [Q42](https://quality.arc42.org/) / ISO 25010:2023), 10.2 konkretisiert diese durch messbare Qualitätsszenarien.
+### ADR-001: Adapter Pattern Instead of Proxy for Connectors
 
-### 10.1 Überblick
+**Context:** PDS data systems do not speak the same interface as the broker.
+**Decision:** Adapter pattern — structural translation on both sides.
+**Rationale:** A proxy presupposes an identical interface. PDS with heterogeneous systems require translation.
 
-| Kategorie | Qualitätsanforderung | Priorität | Verweis |
+### ADR-002: FHIR Message Bundles Instead of a Proprietary JSON Envelope
+
+**Context:** Messages between broker and connectors need a defined format.
+**Decision:** FHIR Message Bundles with MessageHeader, Parameters, OperationOutcome.
+**Rationale:** One format, one parser. The FHIR spec permits operation invocation via messaging.
+
+### ADR-003: Triple of OperationDefinition + MessageDefinition + GraphDefinition
+
+**Context:** An OperationDefinition alone does not describe the complete message contract.
+**Decision:** MessageDefinition for mandatory payloads + allowed responses. GraphDefinition for payload structure.
+**Rationale:** Validatable contracts instead of implicit convention.
+
+### ADR-004: CapabilityStatement.messaging Instead of Proprietary Discovery
+
+**Context:** Connectors must declare which operations they support.
+**Decision:** `CapabilityStatement.messaging.supportedMessage`.
+**Rationale:** FHIR-native, standardized, queryable.
+
+### ADR-005: Pseudonyms as Parameters Identifiers (Not a MessageHeader Extension)
+
+**Context:** Pseudonyms must be transmitted in the request.
+**Decision:** `parameter` of type `Identifier`, `system` = gPAS domain.
+**Rationale:** Pseudonyms are operation parameters, not control information.
+
+### ADR-006: Fanout Exchange to Start, Topic as the Target Architecture
+
+**Context:** Simple start vs. precise routing.
+**Decision:** Fanout for the prototype, Topic with `pds.{pdsId}.*` as the system grows.
+
+### ADR-007: PascalCase Names for OperationDefinitions
+
+**Context:** FHIR constraint opd-0 requires `[A-Z]([A-Za-z0-9_]){1,254}`.
+**Decision:** PascalCase without underscores (e.g. `GetConditions`), analogous to the FHIR core specification.
+**Rationale:** Consistency with HL7 practice. Underscores are valid but uncommon.
+
+### ADR-008: Provenance + AuditEvent Instead of Proprietary Logging
+
+**Context:** Data origin and the processing log must be traceable in the aggregated Bundle.
+**Decision:** `Provenance` for data origin per resource (created by the connector), `AuditEvent` for processing steps (created by connector + broker). `Resource.meta.source` as a lightweight short reference. Everything transported as regular Bundle entries.
+**Rationale:** FHIR-native resources, no proprietary log format. Provenance and AuditEvent are standardized FHIR R4 resources with defined semantics ([FHIR R4 Provenance](https://hl7.org/fhir/R4/provenance.html), [FHIR R4 AuditEvent](https://hl7.org/fhir/R4/auditevent.html)). The path of every resource from source to display is reconstructible.
+
+### ADR-009: MessageHeader.destination for Multi-Client Routing
+
+**Context:** Multiple requesting systems (portal, CDSS, research portal) can submit requests through the broker concurrently. Without a discriminator at the message and routing level, the broker cannot assign the aggregated response to the correct requesting system.
+**Decision:** `MessageHeader.destination.endpoint` is set in the request by the requesting system to a system-specific response queue (e.g. `amqp://.../responses.portal`). The broker reads this value and publishes the aggregated Bundle to the corresponding queue. At the AMQP level, `replyTo` correlates in parallel with `destination.endpoint`. For requests without `destination`, a default response queue is used (`responses.default`).
+**Rationale:** FHIR `MessageHeader.destination` is the standardized mechanism for message routing ([FHIR R4 MessageHeader.destination](https://hl7.org/fhir/R4/messageheader-definitions.html#MessageHeader.destination)). The combination with AMQP `replyTo` ensures consistency at both levels (FHIR semantics + transport).
+
+---
+
+## 10. Quality Requirements
+
+> Section 10 follows the arc42 v9.0 structure: 10.1 gives an overview of the quality requirements by category (aligned with [Q42](https://quality.arc42.org/) / ISO 25010:2023); 10.2 makes them concrete through measurable quality scenarios.
+
+### 10.1 Overview
+
+| Category | Quality requirement | Priority | Reference |
 |-----------|---------------------|-----------|---------|
-| **#interoperable** | Alle Nachrichten und Antwort-Ressourcen sind FHIR R4 konform und entsprechen — sofern konfiguriert — den im Katalog hinterlegten Profilen. | Hoch | → ADR-002, ADR-003 |
-| **#flexible** | Neue Operationen können durch Anlegen von FHIR-Ressourcen im Katalog hinzugefügt werden — ohne Rebuild bestehender Connectoren. | Hoch | → ADR-003, Abschnitt 8.2 |
-| **#flexible** | Ein neuer PDS-Standort wird durch Deployment eines Connectors und Einrichten einer RabbitMQ-Queue angebunden — ohne Änderung am Broker. | Hoch | → ADR-006, Abschnitt 7 |
-| **#reliable** | Der Broker liefert Partial Results mit `OperationOutcome`, wenn einzelne PDS nicht antworten. | Mittel | → Abschnitt 6.2 |
-| **#operable** | PDS-Entwickler erhalten einen generierten Connector-Stub und ein Konformitätstest-Framework. | Mittel | → Abschnitt 8.5, CONTRIBUTING.md |
-| **#secure** | Daten bleiben pseudonymisiert; kein zentraler Datenspeicher. Autorisierungsscopes für Drittanwendungen sind noch zu definieren. | Niedrig (aktuell) | → Abschnitt 11 |
-| **#traceable** | Jede Ressource im aggregierten Bundle trägt ihre Herkunft (PDS, Quellsystem) und ein Verarbeitungsprotokoll. | Hoch | → ADR-008, Abschnitt 8.7 |
+| **#interoperable** | All messages and response resources are FHIR R4 conformant and — where configured — conform to the profiles stored in the catalog. | High | → ADR-002, ADR-003 |
+| **#flexible** | New operations can be added by creating FHIR resources in the catalog — without rebuilding existing connectors. | High | → ADR-003, Section 8.2 |
+| **#flexible** | A new PDS site is onboarded by deploying a connector and setting up a RabbitMQ queue — without changing the broker. | High | → ADR-006, Section 7 |
+| **#reliable** | The broker delivers partial results with `OperationOutcome` when individual PDS do not respond. | Medium | → Section 6.2 |
+| **#operable** | PDS developers receive a generated connector stub and a conformance test framework. | Medium | → Section 8.5, CONTRIBUTING.md |
+| **#secure** | Data remains pseudonymized; no central data store. Authorization scopes for third-party applications are yet to be defined. | Low (currently) | → Section 11 |
+| **#traceable** | Every resource in the aggregated Bundle carries its origin (PDS, source system) and a processing log. | High | → ADR-008, Section 8.7 |
 
-### 10.2 Details (Qualitätsszenarien)
+### 10.2 Details (Quality Scenarios)
 
-| ID | Stimulus | Reaktion | Metrik / Akzeptanzkriterium |
+| ID | Stimulus | Response | Metric / acceptance criterion |
 |----|----------|----------|---------------------------|
-| QS-1 | Ein Connector liefert Condition-Ressourcen ohne ICD-10-GM-Coding. | `FhirProfileValidator` im Stub erkennt Profilverstoß und sendet `OperationOutcome` statt invalider Daten. | 0 nicht-profilkonforme Ressourcen erreichen den Broker. |
-| QS-2 | Ein neues PDS soll angebunden werden. | PDS-Entwickler generiert Stub, implementiert Handler, deklariert Queue. | Broker-Code und bestehende Connectoren bleiben unverändert (0 Änderungen). |
-| QS-3 | Ein PDS antwortet nicht innerhalb des konfigurierten Timeouts (Default: 8s). | Aggregator erzeugt Partial Result mit `OperationOutcome` für das fehlende PDS. | Portal erhält Ergebnisse der antwortenden PDS innerhalb 10s. |
-| QS-4 | Eine neue Operation `GetNewData` wird benötigt. | Projektkern legt OperationDefinition + MessageDefinition + GraphDefinition im Katalog an. | 0 Connector-Rebuilds nötig. Bestehende Connectoren antworten mit `not-supported`. |
-| QS-5 | Ein konfiguriertes Profil wird in neuer Version veröffentlicht. | Katalog-Update (`targetProfile` aktualisieren), Konformitätstests pro PDS, Re-Zertifizierung. | Alle Connectoren validieren gegen die neue Profilversion vor dem nächsten Release. |
-| QS-6 | Ein Auditor will nachvollziehen, welches PDS eine bestimmte Condition-Ressource geliefert hat und ob die Profilvalidierung bestanden wurde. | `Provenance.agent.who` identifiziert das PDS, `Provenance.entity.what` das Quellsystem. `AuditEvent.entity.detail[profile-validation]` dokumentiert das Validierungsergebnis. | Jede fachliche Ressource im aggregierten Bundle hat genau eine zugehörige `Provenance` und mindestens ein `AuditEvent`. |
+| QS-1 | A connector delivers Condition resources without an ICD-10-GM coding. | The `FhirProfileValidator` in the stub detects the profile violation and sends an `OperationOutcome` instead of invalid data. | 0 non-profile-conformant resources reach the broker. |
+| QS-2 | A new PDS is to be onboarded. | The PDS developer generates the stub, implements handlers, declares the queue. | Broker code and existing connectors remain unchanged (0 changes). |
+| QS-3 | A PDS does not respond within the configured timeout (default: 8s). | The aggregator produces a partial result with an `OperationOutcome` for the missing PDS. | The portal receives results from the responding PDS within 10s. |
+| QS-4 | A new operation `GetNewData` is needed. | The project core creates OperationDefinition + MessageDefinition + GraphDefinition in the catalog. | 0 connector rebuilds required. Existing connectors respond with `not-supported`. |
+| QS-5 | A configured profile is published in a new version. | Catalog update (update `targetProfile`), conformance tests per PDS, re-certification. | All connectors validate against the new profile version before the next release. |
+| QS-6 | An auditor wants to trace which PDS delivered a specific Condition resource and whether profile validation passed. | `Provenance.agent.who` identifies the PDS, `Provenance.entity.what` the source system. `AuditEvent.entity.detail[profile-validation]` documents the validation result. | Every business resource in the aggregated Bundle has exactly one associated `Provenance` and at least one `AuditEvent`. |
 
 ---
 
-## 11. Risiken und technische Schulden
+## 11. Risks and Technical Debt
 
-| Risiko | Auswirkung | Maßnahme |
+| Risk | Impact | Mitigation |
 |--------|------------|----------|
-| die konfigurierten Profile ändern sich | Handler-Ausgabe wird invalide | Profilversionen im Katalog pinnen, Re-Zertifizierung bei Update |
-| AsyncAPI `allOf` Tooling-Lücken | Stub-Generierung bei Spec-Erweiterung fragil | AsyncAPI-Spec minimal halten (nur Transport), Semantik in FHIR |
-| Keine Autorisierung implementiert | Drittanwendungen könnten auf beliebige Daten zugreifen | SMART on FHIR Scopes definieren vor Produktivbetrieb |
-| Fanout-Skalierung | Bei 50+ PDS: jeder Connector erhält jede Nachricht | Migration auf Topic Exchange mit `pds.{pdsId}.*` |
+| The configured profiles change | Handler output becomes invalid | Pin profile versions in the catalog, re-certification on update |
+| AsyncAPI `allOf` tooling gaps | Stub generation fragile when the spec is extended | Keep the AsyncAPI spec minimal (transport only), semantics in FHIR |
+| No authorization implemented | Third-party applications could access arbitrary data | Define SMART on FHIR scopes before production use |
+| Fanout scaling | With 50+ PDS: every connector receives every message | Migrate to a Topic Exchange with `pds.{pdsId}.*` |
 
 ---
 
-## 12. Glossar
+## 12. Glossary
 
-| Begriff | Definition |
+| Term | Definition |
 |---------|------------|
-| **BFF** | Backend for Frontend — dedizierte Service-Schicht zwischen Portal-UI und Broker |
-| **Connector** | Eigenständiger Microservice pro PDS-Standort; Adapter zwischen Broker-Protokoll und lokalem Datensystem |
-| **PDS** | Primary Data Source (Primärdatenquelle) — speichert medizinische Primärdaten (z.B. Datenintegrationszentrum, Krankenhaus-IT, Laborinformationssystem) |
-| **E-PIX** | Enterprise Patient Identifier Cross-referencing — MOSAiC-Komponente für ID-Management |
-| **gPAS** | generic Pseudonym Administration Service — MOSAiC-Komponente für Pseudonymverwaltung |
-| **gICS** | generic Informed Consent Service — MOSAiC-Komponente für Einwilligungsmanagement |
-| **GraphDefinition** | FHIR-Ressource; beschreibt den Ressourcengraphen einer Antwortnachricht mit Profilbindung |
-| **MessageDefinition** | FHIR-Ressource; formalisiert Nachrichtenvertrag (Pflicht-Payloads, erlaubte Antworten) |
-| **MII** | Medizininformatik-Initiative — ein Anwendungskontext, für den MII-KDS-Profile als `targetProfile` konfiguriert werden können |
-| **MII KDS** | MII-Kerndatensatz — ein Beispiel für projektspezifische FHIR-Profile; nicht architekturinhärent |
-| **MOSAiC** | Modular Open Source Architecture for Identity and Consent — Treuhandstellen-Software der Uni Greifswald |
-| **Nachrichtenkatalog** | FHIR-Server mit OperationDefinitions, MessageDefinitions, GraphDefinitions und projektspezifischen Profilen |
-| **OperationDefinition** | FHIR-Ressource; beschreibt Semantik einer Operation (Parameter, Typen, `targetProfile`) |
-| **OperationOutcome** | FHIR-Ressource für standardisiertes Fehlermodell |
-| **Partial Result** | Aggregiertes Ergebnis bei Timeout einzelner PDS; enthält `OperationOutcome` |
-| **Provenance** | FHIR-Ressource; dokumentiert Herkunft einer Ressource — wer (agent), wann, aus welcher Quelle (entity) |
-| **AuditEvent** | FHIR-Ressource; dokumentiert einen Verarbeitungsschritt — Aktion, Zeitraum, Ergebnis, beteiligte Systeme |
-| **Self-Filtering** | Connector entscheidet eigenständig, ob er eine Broadcast-Nachricht verarbeitet |
-| **THS** | Treuhandstelle — vermittelt zwischen Pseudonymen und Identitäten |
+| **BFF** | Backend for Frontend — dedicated service layer between the portal UI and the broker |
+| **Connector** | Standalone microservice per PDS site; adapter between the broker protocol and the local data system |
+| **PDS** | Primary data source (German: Primärdatenquelle) — stores primary medical data (e.g. data integration center, hospital IT, laboratory information system) |
+| **E-PIX** | Enterprise Patient Identifier Cross-referencing — MOSAiC component for ID management |
+| **gPAS** | generic Pseudonym Administration Service — MOSAiC component for pseudonym administration |
+| **gICS** | generic Informed Consent Service — MOSAiC component for consent management |
+| **GraphDefinition** | FHIR resource; describes the resource graph of a response message with profile binding |
+| **MessageDefinition** | FHIR resource; formalizes the message contract (mandatory payloads, allowed responses) |
+| **MII** | Medical Informatics Initiative (Medizininformatik-Initiative) — an application context for which MII KDS profiles can be configured as `targetProfile` |
+| **MII KDS** | MII core data set (MII-Kerndatensatz) — an example of project-specific FHIR profiles; not inherent to the architecture |
+| **MOSAiC** | Modular Open Source Architecture for Identity and Consent — trusted-third-party software from the University of Greifswald |
+| **Message catalog** | FHIR server holding OperationDefinitions, MessageDefinitions, GraphDefinitions, and project-specific profiles |
+| **OperationDefinition** | FHIR resource; describes the semantics of an operation (parameters, types, `targetProfile`) |
+| **OperationOutcome** | FHIR resource for a standardized error model |
+| **Partial result** | Aggregated result when individual PDS time out; contains `OperationOutcome` |
+| **Provenance** | FHIR resource; documents the origin of a resource — who (agent), when, from which source (entity) |
+| **AuditEvent** | FHIR resource; documents a processing step — action, period, outcome, systems involved |
+| **Self-filtering** | The connector decides autonomously whether it processes a broadcast message |
+| **THS** | Trusted third party (German: Treuhandstelle) — mediates between pseudonyms and identities |

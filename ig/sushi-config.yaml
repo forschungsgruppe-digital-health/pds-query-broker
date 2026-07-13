@@ -3,10 +3,10 @@ canonical: https://querybroker.example.org/fhir
 name: QueryBrokerIG
 title: "Query Broker — FHIR Infrastructure Profiles"
 description: >-
-  FHIR R4 ImplementationGuide für den Query Broker. Definiert Profile für die
-  Infrastruktur-Ressourcen des Broker-Protokolls (MessageHeader, Parameters,
-  Provenance, AuditEvent) sowie eine exemplarische OperationDefinition mit
-  zugehöriger MessageDefinition und GraphDefinition.
+  FHIR R4 ImplementationGuide for the Query Broker. Defines profiles for the
+  infrastructure resources of the broker protocol (MessageHeader, Parameters,
+  Provenance, AuditEvent) as well as an exemplary OperationDefinition with
+  its associated MessageDefinition and GraphDefinition.
 status: active
 version: 0.1.0
 fhirVersion: 4.0.1
@@ -20,26 +20,26 @@ publisher:
   url: https://querybroker.example.org
 
 dependencies: {}
-  # Projektspezifische Profile als Dependency, z.B.:
+  # Project-specific profiles as a dependency, e.g.:
   # de.medizininformatikinitiative.kerndatensatz.diagnose: 2025.0.1
   # hl7.fhir.us.core: 6.1.0
 
 pages:
   index.md:
-    title: Startseite
+    title: Home
   profiles.md:
-    title: Profile
+    title: Profiles
   operations.md:
-    title: Operationen
+    title: Operations
   examples.md:
-    title: Beispiele
+    title: Examples
 
 menu:
-  Startseite: index.html
-  Profile: profiles.html
-  Operationen: operations.html
-  Beispiele: examples.html
-  Artefakte: artifacts.html
+  Home: index.html
+  Profiles: profiles.html
+  Operations: operations.html
+  Examples: examples.html
+  Artifacts: artifacts.html
 
 parameters:
   show-hierarchies: false

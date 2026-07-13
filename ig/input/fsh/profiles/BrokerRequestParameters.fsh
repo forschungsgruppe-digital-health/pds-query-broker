@@ -3,9 +3,9 @@ Parent: Parameters
 Id: broker-request-parameters
 Title: "Query Broker Request Parameters"
 Description: """
-Profil für die Parameters-Ressource in Request-Nachrichten. Formalisiert den
-Pseudonym-Parameter als wiederholbaren Identifier. Weitere operationsspezifische
-Parameter sind offen (Open Slicing).
+Profile for the Parameters resource in request messages. Formalizes the
+pseudonym parameter as a repeatable Identifier. Further operation-specific
+parameters are open (open slicing).
 """
 
 * ^url = "https://querybroker.example.org/fhir/StructureDefinition/BrokerRequestParameters"
@@ -15,13 +15,13 @@ Parameter sind offen (Open Slicing).
 * parameter ^slicing.discriminator.type = #value
 * parameter ^slicing.discriminator.path = "name"
 * parameter ^slicing.rules = #open
-* parameter ^slicing.description = "Pseudonym-Parameter verpflichtend, operationsspezifische Parameter offen."
+* parameter ^slicing.description = "Pseudonym parameter mandatory, operation-specific parameters open."
 
 * parameter contains pseudonym 1..*
 * parameter[pseudonym].name = "pseudonym"
 * parameter[pseudonym].value[x] only Identifier
 * parameter[pseudonym].valueIdentifier 1..1
 * parameter[pseudonym].valueIdentifier.system 1..1
-* parameter[pseudonym].valueIdentifier.system ^short = "URI der Pseudonymisierungsdomäne"
+* parameter[pseudonym].valueIdentifier.system ^short = "URI of the pseudonymization domain"
 * parameter[pseudonym].valueIdentifier.value 1..1
-* parameter[pseudonym].valueIdentifier.value ^short = "Das standortspezifische Pseudonym"
+* parameter[pseudonym].valueIdentifier.value ^short = "The site-specific pseudonym"

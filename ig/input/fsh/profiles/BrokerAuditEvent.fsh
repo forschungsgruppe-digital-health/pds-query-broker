@@ -3,8 +3,8 @@ Parent: AuditEvent
 Id: broker-audit-event
 Title: "Query Broker AuditEvent"
 Description: """
-Profil für AuditEvent-Ressourcen, die Verarbeitungsschritte dokumentieren.
-Definiert standardisierte `entity.detail`-Keys für maschinenlesbare Protokolle.
+Profile for AuditEvent resources documenting processing steps.
+Defines standardized `entity.detail` keys for machine-readable logs.
 """
 
 * ^url = "https://querybroker.example.org/fhir/StructureDefinition/BrokerAuditEvent"
@@ -43,14 +43,14 @@ Definiert standardisierte `entity.detail`-Keys für maschinenlesbare Protokolle.
     durationMs 0..1
 
 * entity.detail[operation].type = "operation"
-* entity.detail[operation] ^short = "Name der Operation (z.B. GetConditions)"
+* entity.detail[operation] ^short = "Name of the operation (e.g. GetConditions)"
 * entity.detail[pseudonymDomain].type = "pseudonym-domain"
-* entity.detail[pseudonymDomain] ^short = "URI der Pseudonymisierungsdomäne"
+* entity.detail[pseudonymDomain] ^short = "URI of the pseudonymization domain"
 * entity.detail[sourceSystem].type = "source-system"
-* entity.detail[sourceSystem] ^short = "Bezeichnung des Quellsystems"
+* entity.detail[sourceSystem] ^short = "Name of the source system"
 * entity.detail[profileValidation].type = "profile-validation"
-* entity.detail[profileValidation] ^short = "Ergebnis: passed | failed | skipped"
+* entity.detail[profileValidation] ^short = "Result: passed | failed | skipped"
 * entity.detail[resultCount].type = "result-count"
-* entity.detail[resultCount] ^short = "Anzahl der fachlichen Ressourcen"
+* entity.detail[resultCount] ^short = "Number of clinical resources"
 * entity.detail[durationMs].type = "duration-ms"
-* entity.detail[durationMs] ^short = "Verarbeitungsdauer in Millisekunden"
+* entity.detail[durationMs] ^short = "Processing duration in milliseconds"

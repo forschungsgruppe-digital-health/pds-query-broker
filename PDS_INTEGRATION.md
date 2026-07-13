@@ -1,40 +1,40 @@
-# PDS-Integrationsleitfaden
+# PDS Integration Guide
 
 > Version 0.2.0 · 2026-05-04
 
-Dieses Dokument beschreibt den sprachagnostischen Implementierungspfad für PDS-Entwickler, die einen Connector für den Query Broker bereitstellen. Es ist unabhängig von Programmiersprache, lokalem Datensystem und Pseudonymisierungsinfrastruktur.
+This document describes the language-agnostic implementation path for PDS developers providing a connector for the Query Broker. It is independent of programming language, local data system, and pseudonymization infrastructure.
 
-> Für die Weiterentwicklung von Broker, SDK und Nachrichtenkatalog siehe [CONTRIBUTING.md](CONTRIBUTING.md). Für die Gesamtarchitektur siehe [ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
----
-
-## Inhaltsverzeichnis
-
-1. [Überblick: Was ein PDS-Connector ist](#1-überblick-was-ein-pds-connector-ist)
-2. [Voraussetzungen](#2-voraussetzungen)
-3. [Stub generieren](#3-stub-generieren)
-4. [Konfiguration](#4-konfiguration)
-5. [OperationDefinition lesen und verstehen](#5-operationdefinition-lesen-und-verstehen)
-6. [Handler implementieren](#6-handler-implementieren)
-7. [Handler registrieren](#7-handler-registrieren)
-8. [RabbitMQ-Queue einrichten](#8-rabbitmq-queue-einrichten)
-9. [Connector starten und verifizieren](#9-connector-starten-und-verifizieren)
-10. [Konformitätstests](#10-konformitätstests)
-11. [Neue Operationen unterstützen](#11-neue-operationen-unterstützen)
+> For further development of the broker, SDK, and message catalog, see [CONTRIBUTING.md](CONTRIBUTING.md). For the overall architecture, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
-## 1. Überblick: Was ein PDS-Connector ist
+## Table of Contents
 
-Ein PDS-Connector ist ein eigenständiger Dienst, der am PDS-Standort betrieben wird. Er empfängt FHIR Message Bundles über RabbitMQ, führt Operationen gegen das lokale Datensystem aus und liefert FHIR-konforme Ergebnisse zurück.
+1. [Overview: What a PDS connector is](#1-overview-what-a-pds-connector-is)
+2. [Prerequisites](#2-prerequisites)
+3. [Generating the stub](#3-generating-the-stub)
+4. [Configuration](#4-configuration)
+5. [Reading and understanding the OperationDefinition](#5-reading-and-understanding-the-operationdefinition)
+6. [Implementing a handler](#6-implementing-a-handler)
+7. [Registering a handler](#7-registering-a-handler)
+8. [Setting up the RabbitMQ queue](#8-setting-up-the-rabbitmq-queue)
+9. [Starting and verifying the connector](#9-starting-and-verifying-the-connector)
+10. [Conformance tests](#10-conformance-tests)
+11. [Supporting new operations](#11-supporting-new-operations)
+
+---
+
+## 1. Overview: What a PDS connector is
+
+A PDS connector is a standalone service operated at the site of the primary data source (PDS). It receives FHIR Message Bundles via RabbitMQ, executes operations against the local data system, and returns FHIR-conformant results.
 
 ```mermaid
 graph LR
     MQ[("RabbitMQ<br/><i>pds.broadcast</i>")]
-    STUB["Generierter Stub<br/><i>AMQP · Parsing · Filtering<br/>Validierung · Provenance</i>"]
-    HANDLER["Handler<br/><i>vom PDS-Entwickler</i>"]
-    THS["Lokale THS"]
-    SRC[("Lokales<br/>Datensystem")]
+    STUB["Generated stub<br/><i>AMQP · Parsing · Filtering<br/>Validation · Provenance</i>"]
+    HANDLER["Handler<br/><i>by the PDS developer</i>"]
+    THS["Local THS"]
+    SRC[("Local<br/>data system")]
 
     MQ -->|"FHIR Message Bundle"| STUB
     STUB -->|"pseudonym + parameters"| HANDLER
@@ -44,94 +44,94 @@ graph LR
     HANDLER -.->|"Query"| SRC
 ```
 
-### Aufgabenteilung
+### Division of responsibilities
 
-| Aufgabe | Verantwortung |
+| Task | Responsibility |
 |---------|---------------|
-| AMQP-Verbindung, Queue-Binding, Message-Empfang | Generierter Stub |
-| FHIR Message Bundle deserialisieren, `MessageHeader.eventUri` auswerten | Generierter Stub |
-| Pseudonym-Filtering (gPAS-Domäne prüfen) | Generierter Stub |
-| Capability-Check (Handler registriert?) | Generierter Stub |
-| `Parameters`-Ressource extrahieren und an Handler übergeben | Generierter Stub |
-| **Pseudonym → interne ID auflösen** | **PDS-Entwickler (Handler)** |
-| **Lokales Datensystem abfragen** | **PDS-Entwickler (Handler)** |
-| **Lokale Daten → FHIR-Ressourcen mappen** | **PDS-Entwickler (Handler)** |
-| **FHIR Bundle zusammenbauen und zurückgeben** | **PDS-Entwickler (Handler)** |
-| Handler-Ergebnis gegen `targetProfile` validieren | Generierter Stub |
-| Provenance und AuditEvent erzeugen | Generierter Stub |
-| FHIR Message Response verpacken und via AMQP senden | Generierter Stub |
-| CapabilityStatement generieren und unter `/metadata` publizieren | Generierter Stub |
+| AMQP connection, queue binding, message reception | Generated stub |
+| Deserializing the FHIR Message Bundle, evaluating `MessageHeader.eventUri` | Generated stub |
+| Pseudonym filtering (checking the gPAS domain) | Generated stub |
+| Capability check (handler registered?) | Generated stub |
+| Extracting the `Parameters` resource and passing it to the handler | Generated stub |
+| **Resolving pseudonym → internal ID** | **PDS developer (handler)** |
+| **Querying the local data system** | **PDS developer (handler)** |
+| **Mapping local data → FHIR resources** | **PDS developer (handler)** |
+| **Assembling and returning the FHIR Bundle** | **PDS developer (handler)** |
+| Validating the handler result against the `targetProfile` | Generated stub |
+| Creating Provenance and AuditEvent | Generated stub |
+| Packaging the FHIR Message Response and sending it via AMQP | Generated stub |
+| Generating the CapabilityStatement and publishing it under `/metadata` | Generated stub |
 
 ---
 
-## 2. Voraussetzungen
+## 2. Prerequisites
 
-| Voraussetzung | Zweck |
+| Prerequisite | Purpose |
 |---------------|-------|
-| AsyncAPI CLI | Stub-Generierung aus der AsyncAPI Base-Spec |
-| FHIR-Bibliothek der Zielsprache | FHIR-Ressourcen erzeugen und serialisieren |
-| AMQP-Client der Zielsprache | Wird vom generierten Stub verwendet |
-| Netzwerkzugang zum RabbitMQ Broker | Ausgehende AMQP-Verbindung (Port 5672) |
-| Netzwerkzugang zum Katalog-Server | FHIR REST (HTTPS) für Katalog-Abruf |
-| Netzwerkzugang zur lokalen THS | REST-API für Pseudonym-Auflösung |
-| Zugang zum lokalen Datensystem | SQL, REST, HL7 v2, Datei — je nach System |
+| AsyncAPI CLI | Stub generation from the AsyncAPI base spec |
+| FHIR library for the target language | Creating and serializing FHIR resources |
+| AMQP client for the target language | Used by the generated stub |
+| Network access to the RabbitMQ broker | Outbound AMQP connection (port 5672) |
+| Network access to the catalog server | FHIR REST (HTTPS) for catalog retrieval |
+| Network access to the local THS | REST API for pseudonym resolution |
+| Access to the local data system | SQL, REST, HL7 v2, file — depending on the system |
 
-**FHIR-Bibliotheken nach Sprache:**
+**FHIR libraries by language:**
 
-| Sprache | Bibliothek |
+| Language | Library |
 |---------|------------|
 | Java | [HAPI FHIR](https://hapifhir.io/) |
 | Python | [fhir.resources](https://pypi.org/project/fhir.resources/) |
-| TypeScript / JavaScript | [fhir-kit-client](https://github.com/Vermonster/fhir-kit-client) oder native JSON |
+| TypeScript / JavaScript | [fhir-kit-client](https://github.com/Vermonster/fhir-kit-client) or native JSON |
 | Go | [samply/golang-fhir-models](https://github.com/samply/golang-fhir-models) |
 | C# / .NET | [Hl7.Fhir.R4](https://github.com/FirelyTeam/firely-net-sdk) |
 
 ---
 
-## 3. Stub generieren
+## 3. Generating the stub
 
-Die AsyncAPI Base-Spec (`specs/pds-connector-base.yaml`) definiert die AMQP-Topologie und den Content-Type (`application/fhir+json`). Aus dieser Spec wird ein sprachspezifischer Stub generiert:
+The AsyncAPI base spec (`specs/pds-connector-base.yaml`) defines the AMQP topology and the content type (`application/fhir+json`). A language-specific stub is generated from this spec:
 
 ```bash
 asyncapi generate fromTemplate specs/pds-connector-base.yaml \
   @asyncapi/{template} \
-  -o ./connectors/pds-mein-standort
+  -o ./connectors/pds-my-site
 ```
 
-> Verfügbare Templates: `java-spring`, `python-paho`, `nodejs`, `go-watermill` u.a. Alternativ kann ein Template-Projekt der gewünschten Sprache kopiert werden: `cp -r connectors/pds-example-{sprache} connectors/pds-mein-standort`
+> Available templates: `java-spring`, `python-paho`, `nodejs`, `go-watermill`, among others. Alternatively, a template project in the desired language can be copied: `cp -r connectors/pds-example-{sprache} connectors/pds-my-site`
 
-Der generierte Stub enthält folgende Module:
+The generated stub contains the following modules:
 
-| Modul | Verantwortlichkeit | Manuell ändern? |
+| Module | Responsibility | Modify manually? |
 |-------|-------------------|-----------------|
-| `amqp_listener` | AMQP-Verbindung, Queue-Binding | Nein |
-| `message_parser` | FHIR Message Bundle Deserialisierung | Nein |
-| `pseudonym_filter` | gPAS-Domäne aus Parameters extrahieren | Nein |
-| `capability_check` | Handler-Registrierung prüfen | Nein |
-| `profile_validator` | `targetProfile`-Validierung | Nein |
-| `provenance_builder` | Provenance + AuditEvent erzeugen | Nein |
-| `response_builder` | FHIR Message Response zusammenbauen | Nein |
-| `handlers/` | **Hier implementiert der PDS-Entwickler** | **Ja** |
-| `config.yaml.template` | Konfigurationsvorlage | Ja (kopieren + anpassen) |
+| `amqp_listener` | AMQP connection, queue binding | No |
+| `message_parser` | FHIR Message Bundle deserialization | No |
+| `pseudonym_filter` | Extracting the gPAS domain from Parameters | No |
+| `capability_check` | Checking handler registration | No |
+| `profile_validator` | `targetProfile` validation | No |
+| `provenance_builder` | Creating Provenance + AuditEvent | No |
+| `response_builder` | Assembling the FHIR Message Response | No |
+| `handlers/` | **This is where the PDS developer implements** | **Yes** |
+| `config.yaml.template` | Configuration template | Yes (copy + adapt) |
 
 ---
 
-## 4. Konfiguration
+## 4. Configuration
 
-Konfigurationsdatei anlegen (identisch über alle Sprachen):
+Create a configuration file (identical across all languages):
 
 ```yaml
 pds:
   connector:
-    pds-id: "PDS-MEIN-STANDORT"
-    gpas-domain: "https://ths.example.org/gpas/domain/PDS-MEIN-STANDORT"
+    pds-id: "PDS-MY-SITE"
+    gpas-domain: "https://ths.example.org/gpas/domain/PDS-MY-SITE"
     catalog-url: "https://catalog.example.org/fhir"
     catalog-refresh-interval: 3600
 
 amqp:
   host: rabbitmq.example.org
   port: 5672
-  queue: "req.PDS-MEIN-STANDORT"
+  queue: "req.PDS-MY-SITE"
   username: ${RABBITMQ_USER}
   password: ${RABBITMQ_PASS}
   response-queue: "responses.default"
@@ -141,38 +141,38 @@ ths:
     url: "https://ths.mein-standort.de/api"
 ```
 
-| Parameter | Bedeutung |
+| Parameter | Meaning |
 |-----------|-----------|
-| `pds-id` | Eindeutiger Identifier des PDS-Standorts |
-| `gpas-domain` | URI der gPAS-Domäne — Stub filtert eingehende Nachrichten nach Pseudonymen mit dieser Domäne |
-| `catalog-url` | FHIR REST Endpunkt des Katalog-Servers |
-| `catalog-refresh-interval` | Intervall in Sekunden, in dem der Stub den Katalog auf neue/geänderte Operationen prüft |
-| `amqp.queue` | Name der RabbitMQ-Queue, an die der Fanout Exchange Nachrichten liefert |
+| `pds-id` | Unique identifier of the PDS site |
+| `gpas-domain` | URI of the gPAS domain — the stub filters incoming messages for pseudonyms with this domain |
+| `catalog-url` | FHIR REST endpoint of the catalog server |
+| `catalog-refresh-interval` | Interval in seconds at which the stub checks the catalog for new/changed operations |
+| `amqp.queue` | Name of the RabbitMQ queue to which the Fanout Exchange delivers messages |
 
 ---
 
-## 5. OperationDefinition lesen und verstehen
+## 5. Reading and understanding the OperationDefinition
 
-Vor der Implementierung eines Handlers muss der PDS-Entwickler die OperationDefinition der gewünschten Operation kennen. Sie ist über den Katalog-Server oder den publizierten ImplementationGuide (HTML) abrufbar:
+Before implementing a handler, the PDS developer must know the OperationDefinition of the desired operation. It can be retrieved via the catalog server or the published ImplementationGuide (HTML):
 
 ```bash
 curl https://catalog.example.org/fhir/OperationDefinition?status=active | jq '.entry[].resource.name'
 curl https://catalog.example.org/fhir/OperationDefinition/GetConditions | jq .
 ```
 
-Die für die Implementierung relevanten Informationen einer OperationDefinition:
+The information in an OperationDefinition relevant for implementation:
 
 ```mermaid
 graph TB
     OPDEF["OperationDefinition"]
-    NAME["name<br/><i>Handler-Key, z.B. GetConditions</i>"]
+    NAME["name<br/><i>Handler key, e.g. GetConditions</i>"]
     IN["parameter ‹use=in›"]
     OUT["parameter ‹use=out›"]
-    P1["name · type · min · max<br/><i>z.B. dateFrom : date : 0..1</i>"]
-    P2["name · type · min · max<br/><i>z.B. category : Coding : 0..*</i>"]
+    P1["name · type · min · max<br/><i>e.g. dateFrom : date : 0..1</i>"]
+    P2["name · type · min · max<br/><i>e.g. category : Coding : 0..*</i>"]
     RET["return : Bundle"]
-    PART["part : type · targetProfile<br/><i>z.B. Observation · Profil-URL</i>"]
-    RES["resource<br/><i>z.B. Observation</i>"]
+    PART["part : type · targetProfile<br/><i>e.g. Observation · profile URL</i>"]
+    RES["resource<br/><i>e.g. Observation</i>"]
 
     OPDEF --- NAME
     OPDEF --- IN
@@ -183,77 +183,77 @@ graph TB
     OUT --- RET --- PART
 ```
 
-> `targetProfile` ist die zentrale Information für den Mapper: Es bestimmt, welche Pflichtfelder, CodeSystem-Bindungen und Extensions die erzeugten FHIR-Ressourcen haben müssen. Der Stub validiert das Handler-Ergebnis gegen dieses Profil vor dem Versand.
+> `targetProfile` is the key piece of information for the mapper: it determines which mandatory fields, CodeSystem bindings, and extensions the generated FHIR resources must have. The stub validates the handler result against this profile before sending.
 
 ---
 
-## 6. Handler implementieren
+## 6. Implementing a handler
 
-### Handler-Vertrag
+### Handler contract
 
-Der Stub ruft den Handler mit zwei Argumenten auf und erwartet ein FHIR Bundle als Rückgabe:
+The stub calls the handler with two arguments and expects a FHIR Bundle as the return value:
 
 ```pseudocode
 function execute(pseudonym: String, parameters: FHIR.Parameters): FHIR.Bundle
     throws OperationError
 ```
 
-| Element | Typ | Beschreibung |
+| Element | Type | Description |
 |---------|-----|-------------|
-| `pseudonym` (Eingabe) | String | Das Pseudonym, das zur konfigurierten gPAS-Domäne passt. Vom Stub aus der `Parameters`-Ressource extrahiert. |
-| `parameters` (Eingabe) | FHIR Parameters | Typisierte Eingabeparameter (ohne Pseudonym-Einträge — diese hat der Stub bereits verarbeitet). |
-| Rückgabe | FHIR Bundle | Type `searchset`, enthält die fachlichen Ergebnis-Ressourcen. |
-| Fehler | OperationError | Wird vom Stub in ein FHIR `OperationOutcome` übersetzt. |
+| `pseudonym` (input) | String | The pseudonym matching the configured gPAS domain. Extracted by the stub from the `Parameters` resource. |
+| `parameters` (input) | FHIR Parameters | Typed input parameters (without pseudonym entries — the stub has already processed these). |
+| Return value | FHIR Bundle | Type `searchset`, contains the domain-level result resources. |
+| Error | OperationError | Translated by the stub into a FHIR `OperationOutcome`. |
 
-### Drei Teilaufgaben
+### Three subtasks
 
-Jeder Handler hat dieselbe innere Struktur — unabhängig von Sprache und Datensystem:
+Every handler has the same internal structure — regardless of language and data system:
 
 ```mermaid
 flowchart TB
     A["execute(pseudonym, parameters)"]
-    B["1. Pseudonym auflösen<br/><i>Lokale THS aufrufen<br/>pseudonym → interne ID</i>"]
-    C["2. Lokales System abfragen<br/><i>Parameter extrahieren<br/>In lokale Query übersetzen<br/>Abfrage ausführen</i>"]
-    D["3. Ergebnisse → FHIR mappen<br/><i>Pro Datensatz eine FHIR-Ressource<br/>targetProfile-Anforderungen beachten</i>"]
-    E["Bundle (searchset) zurückgeben"]
+    B["1. Resolve pseudonym<br/><i>Call the local THS<br/>pseudonym → internal ID</i>"]
+    C["2. Query the local system<br/><i>Extract parameters<br/>Translate into a local query<br/>Execute the query</i>"]
+    D["3. Map results → FHIR<br/><i>One FHIR resource per record<br/>Observe targetProfile requirements</i>"]
+    E["Return Bundle (searchset)"]
 
     A --> B --> C --> D --> E
 
 ```
 
-> Die Implementierung der Teilaufgaben 1 und 2 ist standortspezifisch und hängt von der lokalen Infrastruktur ab. Der Stub macht keine Annahmen über das lokale Datensystem oder die THS-API.
+> The implementation of subtasks 1 and 2 is site-specific and depends on the local infrastructure. The stub makes no assumptions about the local data system or the THS API.
 
-### Parameter extrahieren
+### Extracting parameters
 
-Die `Parameters`-Ressource enthält typisierte FHIR-Einträge. Die Extraktion folgt in jeder Sprache demselben Muster:
+The `Parameters` resource contains typed FHIR entries. Extraction follows the same pattern in every language:
 
-1. Für jeden Parameter in der OperationDefinition (`use=in`, `name≠pseudonym`): den Eintrag mit passendem `name` in `parameters.parameter[]` suchen.
-2. Den typisierten Wert lesen: `valueDate`, `valueString`, `valueCoding` etc.
-3. Bei optionalen Parametern (`min=0`), die nicht vorhanden sind: Default-Wert verwenden oder leer lassen.
-4. Bei Pflichtparametern (`min=1`), die nicht vorhanden sind: Der Stub hat dies bereits vor dem Handler-Aufruf validiert.
+1. For each parameter in the OperationDefinition (`use=in`, `name≠pseudonym`): find the entry with the matching `name` in `parameters.parameter[]`.
+2. Read the typed value: `valueDate`, `valueString`, `valueCoding`, etc.
+3. For optional parameters (`min=0`) that are not present: use a default value or leave empty.
+4. For mandatory parameters (`min=1`) that are not present: the stub has already validated this before invoking the handler.
 
-Typische Parameter und ihre FHIR-Datentypen:
+Typical parameters and their FHIR data types:
 
-| Parametername | FHIR-Typ | Typische Verwendung |
+| Parameter name | FHIR type | Typical use |
 |---------------|----------|---------------------|
-| `dateFrom` | `date` | Zeitliche Filterung (ab Datum) |
-| `dateTo` | `date` | Zeitliche Filterung (bis Datum) |
-| `category` | `Coding` | Kategoriefilter (`system` + `code`) |
-| `code` | `string` oder `Coding` | Code-basierte Filterung (ICD, LOINC, OPS ...) |
-| `includeHistory` | `boolean` | Flag für historische Daten |
+| `dateFrom` | `date` | Temporal filtering (from date) |
+| `dateTo` | `date` | Temporal filtering (until date) |
+| `category` | `Coding` | Category filter (`system` + `code`) |
+| `code` | `string` or `Coding` | Code-based filtering (ICD, LOINC, OPS ...) |
+| `includeHistory` | `boolean` | Flag for historical data |
 
-### FHIR-Ressourcen erzeugen
+### Creating FHIR resources
 
-Pro Ergebnis-Datensatz aus dem lokalen System wird eine FHIR-Ressource erzeugt. Die Anforderungen ergeben sich aus dem FHIR-Basis-Ressourcentyp und dem `targetProfile`:
+One FHIR resource is created per result record from the local system. The requirements derive from the FHIR base resource type and the `targetProfile`:
 
-1. Ressource instanziieren (Observation, Condition, Procedure etc.)
-2. Pflichtfelder setzen (aus FHIR-Basis + `targetProfile`): `status`, `code` (mit CodeSystem-Binding aus dem Profil), Zeitbezug (`effective[x]`, `onset[x]`, `performed[x]`)
-3. Werte und Einheiten setzen (`value[x]`, Einheit als UCUM-Code falls vom Profil gefordert)
-4. CodeSystem-Bindungen einhalten: Profil fordert z.B. LOINC für `code` → lokalen Code auf LOINC mappen
-5. `meta.source` auf die Connector-URL setzen (leichtgewichtige Herkunftsmarkierung)
-6. `meta.profile` auf die kanonische URL des `targetProfile` setzen
+1. Instantiate the resource (Observation, Condition, Procedure, etc.)
+2. Set mandatory fields (from the FHIR base + `targetProfile`): `status`, `code` (with the CodeSystem binding from the profile), temporal reference (`effective[x]`, `onset[x]`, `performed[x]`)
+3. Set values and units (`value[x]`, unit as a UCUM code if required by the profile)
+4. Comply with CodeSystem bindings: e.g. the profile requires LOINC for `code` → map the local code to LOINC
+5. Set `meta.source` to the connector URL (lightweight provenance marker)
+6. Set `meta.profile` to the canonical URL of the `targetProfile`
 
-### Bundle zusammenbauen
+### Assembling the Bundle
 
 ```pseudocode
 bundle = new Bundle(type = "searchset")
@@ -267,149 +267,149 @@ return bundle
 
 ---
 
-## 7. Handler registrieren
+## 7. Registering a handler
 
-Der Stub erwartet eine Zuordnung von Operationsnamen zu Handler-Funktionen. Der Key ist der `name` aus der OperationDefinition (PascalCase, z.B. `GetConditions`):
+The stub expects a mapping from operation names to handler functions. The key is the `name` from the OperationDefinition (PascalCase, e.g. `GetConditions`):
 
 ```pseudocode
 handlers = {
     "GetConditions": conditionsHandler
-    // weitere Handler hier registrieren
+    // register additional handlers here
 }
 ```
 
-> Der Stub extrahiert den Operationsnamen aus `MessageHeader.eventUri` (letztes Pfadsegment der kanonischen URL) und sucht in der Handler-Map. Nicht registrierte Operationen werden mit `OperationOutcome` (`code: not-supported`) beantwortet.
+> The stub extracts the operation name from `MessageHeader.eventUri` (last path segment of the canonical URL) and looks it up in the handler map. Unregistered operations are answered with an `OperationOutcome` (`code: not-supported`).
 
 ---
 
-## 8. RabbitMQ-Queue einrichten
+## 8. Setting up the RabbitMQ queue
 
-Eine Queue für den Connector deklarieren und an den Fanout Exchange binden:
+Declare a queue for the connector and bind it to the Fanout Exchange:
 
 ```bash
 rabbitmqadmin declare queue \
-  name=req.PDS-MEIN-STANDORT \
+  name=req.PDS-MY-SITE \
   durable=true \
   arguments='{"x-dead-letter-exchange":"pds.dlq"}'
 
 rabbitmqadmin declare binding \
   source=pds.broadcast \
-  destination=req.PDS-MEIN-STANDORT
+  destination=req.PDS-MY-SITE
 ```
 
-> Die Verbindungsrichtung ist **ausgehend** vom PDS zum RabbitMQ Broker — keine eingehenden Verbindungen in das PDS-Netz nötig.
+> The connection direction is **outbound** from the PDS to the RabbitMQ broker — no inbound connections into the PDS network are required.
 
 ---
 
-## 9. Connector starten und verifizieren
+## 9. Starting and verifying the connector
 
-Der Start erfolgt sprachspezifisch (z.B. `./gradlew bootRun`, `python main.py`, `npm start`, `go run .`).
+Startup is language-specific (e.g. `./gradlew bootRun`, `python main.py`, `npm start`, `go run .`).
 
-Verifizierung:
+Verification:
 
 ```bash
-# CapabilityStatement prüfen — listet unterstützte Operationen
-curl https://pds-mein-standort.example.org/connector/metadata \
+# Check the CapabilityStatement — lists supported operations
+curl https://pds-my-site.example.org/connector/metadata \
   | jq '.messaging[0].supportedMessage'
 
-# Queue-Status prüfen — Connector als Consumer sichtbar
+# Check the queue status — connector visible as a consumer
 rabbitmqadmin list queues name messages consumers
 ```
 
-### Connector-Startup-Flow
+### Connector startup flow
 
 ```mermaid
 sequenceDiagram
     participant C as Connector
     participant MQ as RabbitMQ
-    participant CAT as Katalog-Server
+    participant CAT as Catalog server
 
-    C->>MQ: AMQP Connect + Queue binden
+    C->>MQ: AMQP connect + bind queue
     C->>CAT: GET /OperationDefinition?status=active
-    CAT-->>C: Liste aktiver Operationen
+    CAT-->>C: List of active operations
 
-    C->>C: Abgleich mit registrierten Handlern
-    Note right of C: GetConditions → Handler ✓<br/>GetNewOp → kein Handler ✗
+    C->>C: Match against registered handlers
+    Note right of C: GetConditions → handler ✓<br/>GetNewOp → no handler ✗
 
     C->>CAT: GET /MessageDefinition?event-uri={op-urls}
-    CAT-->>C: MessageDefinitions für unterstützte Operationen
+    CAT-->>C: MessageDefinitions for supported operations
 
-    C->>C: CapabilityStatement generieren
+    C->>C: Generate CapabilityStatement
     Note right of C: supportedMessage:<br/>GetConditionsRequest
 
-    C->>C: GET /metadata bereit
-    Note right of C: Connector betriebsbereit
+    C->>C: GET /metadata ready
+    Note right of C: Connector operational
 ```
 
 ---
 
-## 10. Konformitätstests
+## 10. Conformance tests
 
-### Testdimensionen
+### Test dimensions
 
-| Dimension | Prüft | Verantwortung |
+| Dimension | Checks | Responsibility |
 |-----------|-------|---------------|
-| Strukturell | Ist die Handler-Ausgabe valides FHIR? Entspricht sie dem `targetProfile`? | Stub (automatisch vor Versand) + Konformitätstest-Framework |
-| Semantisch | Stimmen CodeSysteme, Pflichtfelder, Referenzen? | Konformitätstest-Framework + Testdaten |
-| Operativ | Antwortet der Connector korrekt auf Broadcasts, Timeouts, unbekannte Operationen? | Mock-Broker-Integrationstests |
+| Structural | Is the handler output valid FHIR? Does it conform to the `targetProfile`? | Stub (automatically before sending) + conformance test framework |
+| Semantic | Are CodeSystems, mandatory fields, and references correct? | Conformance test framework + test data |
+| Operational | Does the connector respond correctly to broadcasts, timeouts, unknown operations? | Mock-broker integration tests |
 
-### Konformitätstests ausführen
+### Running conformance tests
 
 ```bash
 ./conformance-test \
   --operation GetConditions \
   --catalog-url https://catalog.example.org/fhir \
-  --connector-url https://pds-mein-standort.example.org/connector \
+  --connector-url https://pds-my-site.example.org/connector \
   --testdata ./catalog/testdata/GetConditions/v1.0
 ```
 
-### Testdaten-Struktur
+### Test data structure
 
-Synthetische Testdaten werden pro Operation und Version bereitgestellt:
+Synthetic test data is provided per operation and version:
 
-| Pfad | Inhalt |
+| Path | Content |
 |------|--------|
-| `catalog/testdata/GetConditions/v1.0/` | Testdaten-Set für Operation `GetConditions`, Version 1.0 |
-| `synthetic-patient-NNN/input-data.*` | Testdaten für das lokale System (Format je nach System) |
-| `synthetic-patient-NNN/query-params.json` | FHIR Parameters für die Testanfrage |
-| `synthetic-patient-NNN/expected/min-cardinality.json` | Mindest-Kardinalitäten im Ergebnis |
-| `synthetic-patient-NNN/expected/coding-systems.json` | Erlaubte und verbotene CodeSysteme |
+| `catalog/testdata/GetConditions/v1.0/` | Test data set for operation `GetConditions`, version 1.0 |
+| `synthetic-patient-NNN/input-data.*` | Test data for the local system (format depends on the system) |
+| `synthetic-patient-NNN/query-params.json` | FHIR Parameters for the test request |
+| `synthetic-patient-NNN/expected/min-cardinality.json` | Minimum cardinalities in the result |
+| `synthetic-patient-NNN/expected/coding-systems.json` | Allowed and forbidden CodeSystems |
 
-### Erwartete Konsolenausgabe
+### Expected console output
 
 ```console
-GetConditions v1.0 — Konformitätstest für PDS-MEIN-STANDORT
+GetConditions v1.0 — conformance test for PDS-MY-SITE
 ────────────────────────────────────────────────────────────
   synthetic-patient-001:
-    ✅ Response ist valides FHIR R4 Message Bundle
+    ✅ Response is a valid FHIR R4 Message Bundle
     ✅ MessageHeader.response.code = ok
-    ✅ Ergebnis-Ressourcen entsprechen targetProfile
-    ✅ CodeSysteme profilkonform
-    ✅ Provenance vorhanden (agent = PDS-MEIN-STANDORT)
-    ❌ Observation.effective fehlt in 1/3 Ergebnissen
-       → Pflichtfeld laut targetProfile
+    ✅ Result resources conform to targetProfile
+    ✅ CodeSystems conform to the profile
+    ✅ Provenance present (agent = PDS-MY-SITE)
+    ❌ Observation.effective missing in 1/3 results
+       → mandatory field according to targetProfile
 ```
 
 ---
 
-## 11. Neue Operationen unterstützen
+## 11. Supporting new operations
 
-Wenn eine neue OperationDefinition im Katalog erscheint:
+When a new OperationDefinition appears in the catalog:
 
-1. **Katalog prüfen** — Der Connector erkennt die neue Operation beim nächsten Refresh und antwortet mit `OperationOutcome` (`not-supported`) bis ein Handler vorhanden ist.
-2. **OperationDefinition lesen** — Parameter, `targetProfile` und zugehörige GraphDefinition verstehen (→ [Abschnitt 5](#5-operationdefinition-lesen-und-verstehen)).
-3. **Handler implementieren** — Drei Teilaufgaben: THS-Auflösung, lokale Query, FHIR-Mapping (→ [Abschnitt 6](#6-handler-implementieren)).
-4. **Handler registrieren** — Eintrag in der Handler-Map ergänzen (→ [Abschnitt 7](#7-handler-registrieren)).
-5. **Connector deployen** — Der Stub erkennt den neuen Handler, aktualisiert das CapabilityStatement. Der Broker erkennt die neue `supportedMessage` beim nächsten `/metadata`-Abruf.
-6. **Konformitätstests ausführen** — Testdaten für die neue Operation verwenden (→ [Abschnitt 10](#10-konformitätstests)).
+1. **Check the catalog** — The connector detects the new operation at the next refresh and responds with `OperationOutcome` (`not-supported`) until a handler is available.
+2. **Read the OperationDefinition** — Understand the parameters, `targetProfile`, and associated GraphDefinition (→ [Section 5](#5-reading-and-understanding-the-operationdefinition)).
+3. **Implement the handler** — Three subtasks: THS resolution, local query, FHIR mapping (→ [Section 6](#6-implementing-a-handler)).
+4. **Register the handler** — Add an entry to the handler map (→ [Section 7](#7-registering-a-handler)).
+5. **Deploy the connector** — The stub detects the new handler and updates the CapabilityStatement. The broker detects the new `supportedMessage` at the next `/metadata` retrieval.
+6. **Run conformance tests** — Use the test data for the new operation (→ [Section 10](#10-conformance-tests)).
 
-> Der Broker, die AsyncAPI-Spec, die RabbitMQ-Queue und alle anderen Connectoren bleiben unverändert. Die einzige Änderung liegt im Connector des PDS, das die neue Operation unterstützen will.
+> The broker, the AsyncAPI spec, the RabbitMQ queue, and all other connectors remain unchanged. The only change is in the connector of the PDS that wants to support the new operation.
 
 ---
 
-## Referenzen
+## References
 
-| Thema | Quelle |
+| Topic | Source |
 |-------|--------|
 | AsyncAPI Spec | [AsyncAPI 3.0 Specification](https://www.asyncapi.com/docs/reference/specification/v3.0.0) |
 | FHIR Messaging | [HL7 FHIR R4 Messaging](https://hl7.org/fhir/R4/messaging.html) |
@@ -420,5 +420,5 @@ Wenn eine neue OperationDefinition im Katalog erscheint:
 | Provenance | [HL7 FHIR R4 Provenance](https://hl7.org/fhir/R4/provenance.html) |
 | AuditEvent | [HL7 FHIR R4 AuditEvent](https://hl7.org/fhir/R4/auditevent.html) |
 | FHIR Shorthand (FSH) | [FSH School](https://fshschool.org/) |
-| Gesamtarchitektur | [ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| Broker/SDK-Entwicklung | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Overall architecture | [ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Broker/SDK development | [CONTRIBUTING.md](CONTRIBUTING.md) |

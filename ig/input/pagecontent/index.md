@@ -1,27 +1,27 @@
-Der Query Broker ist eine föderierte Integrationsarchitektur, die Datenanfragen an mehrere Primärdatenquellen (PDS) verteilt, deren Antworten aggregiert und profilkonforme FHIR R4 Bundles zurückliefert.
+The Query Broker is a federated integration architecture that distributes data requests to multiple primary data sources (PDS), aggregates their responses, and returns profile-conformant FHIR R4 Bundles.
 
-Dieser ImplementationGuide definiert die FHIR-Infrastrukturprofile des Broker-Protokolls sowie eine exemplarische OperationDefinition mit zugehörigen Nachrichtenverträgen.
+This ImplementationGuide defines the FHIR infrastructure profiles of the broker protocol as well as an exemplary OperationDefinition with its associated message contracts.
 
-### Profile
+### Profiles
 
-| Profil | Basis-Ressource | Zweck |
+| Profile | Base resource | Purpose |
 |--------|----------------|-------|
-| [BrokerMessageHeader](StructureDefinition-broker-message-header.html) | MessageHeader | Nachrichtenformat mit Routing (`destination`), Operationsreferenz (`eventUri`) und Response-Korrelation |
-| [BrokerRequestParameters](StructureDefinition-broker-request-parameters.html) | Parameters | Pseudonym-Slicing und offene operationsspezifische Parameter |
-| [BrokerProvenance](StructureDefinition-broker-provenance.html) | Provenance | Datenherkunft: Standort, Connector, Quellsystem |
-| [BrokerAuditEvent](StructureDefinition-broker-audit-event.html) | AuditEvent | Verarbeitungsprotokoll mit standardisierten Detail-Keys |
+| [BrokerMessageHeader](StructureDefinition-broker-message-header.html) | MessageHeader | Message format with routing (`destination`), operation reference (`eventUri`), and response correlation |
+| [BrokerRequestParameters](StructureDefinition-broker-request-parameters.html) | Parameters | Pseudonym slicing and open operation-specific parameters |
+| [BrokerProvenance](StructureDefinition-broker-provenance.html) | Provenance | Data provenance: site, connector, source system |
+| [BrokerAuditEvent](StructureDefinition-broker-audit-event.html) | AuditEvent | Processing log with standardized detail keys |
 
-### Exemplarische Operation
+### Exemplary operation
 
-| Artefakt | Zweck |
+| Artifact | Purpose |
 |----------|-------|
-| [GetConditions (OperationDefinition)](OperationDefinition-GetConditions.html) | Operationssemantik: Parameter, Typen, Kardinalitäten |
-| [GetConditionsRequest (MessageDefinition)](MessageDefinition-GetConditionsRequest.html) | Nachrichtenvertrag: Pflicht-Payloads, erlaubte Antworten |
-| [GetConditionsResponse (MessageDefinition)](MessageDefinition-GetConditionsResponse.html) | Antwortvertrag |
-| [GetConditionsResponseGraph (GraphDefinition)](GraphDefinition-GetConditionsResponseGraph.html) | Payload-Struktur |
+| [GetConditions (OperationDefinition)](OperationDefinition-GetConditions.html) | Operation semantics: parameters, types, cardinalities |
+| [GetConditionsRequest (MessageDefinition)](MessageDefinition-GetConditionsRequest.html) | Message contract: mandatory payloads, allowed responses |
+| [GetConditionsResponse (MessageDefinition)](MessageDefinition-GetConditionsResponse.html) | Response contract |
+| [GetConditionsResponseGraph (GraphDefinition)](GraphDefinition-GetConditionsResponseGraph.html) | Payload structure |
 
-### Weiterführende Dokumentation
+### Further documentation
 
-- [Architekturdokumentation (Arc42)](https://github.com/[org]/query-broker/blob/main/docs/ARCHITECTURE.md)
-- [PDS-Integrationsleitfaden](https://github.com/[org]/query-broker/blob/main/PDS_INTEGRATION.md)
+- [Architecture documentation (Arc42)](https://github.com/[org]/query-broker/blob/main/docs/ARCHITECTURE.md)
+- [PDS integration guide](https://github.com/[org]/query-broker/blob/main/PDS_INTEGRATION.md)
 - [Contributing](https://github.com/[org]/query-broker/blob/main/CONTRIBUTING.md)

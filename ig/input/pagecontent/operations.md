@@ -1,17 +1,17 @@
-Dieser IG enthält eine exemplarische Operation (`GetConditions`) als Vorlage für projektspezifische Operationen. Jede Operation besteht aus einem Tripel:
+This IG contains an exemplary operation (`GetConditions`) as a template for project-specific operations. Each operation consists of a triple:
 
-1. **OperationDefinition** — Semantik: Parameter, Typen, Kardinalitäten, optionale Profilbindung (`targetProfile`)
-2. **MessageDefinition** — Nachrichtenvertrag: Pflicht-Payloads, erlaubte Antworten, Profilbindung (`focus.profile`)
-3. **GraphDefinition** — Payload-Struktur: Ressourcengraph, Profilbindung (`target.profile`)
+1. **OperationDefinition** — semantics: parameters, types, cardinalities, optional profile binding (`targetProfile`)
+2. **MessageDefinition** — message contract: mandatory payloads, allowed responses, profile binding (`focus.profile`)
+3. **GraphDefinition** — payload structure: resource graph, profile binding (`target.profile`)
 
-### Projektspezifische Operationen definieren
+### Defining project-specific operations
 
-Neue Operationen werden als FHIR-Ressourcen im Nachrichtenkatalog angelegt — nicht als Code-Änderung am Broker oder an bestehenden Connectoren. Die Profilbindung über `targetProfile`, `focus.profile` und `target.profile` ist optional: Operationen ohne Profilbindung liefern FHIR-Basisressourcen zurück.
+New operations are created as FHIR resources in the message catalog — not as code changes to the broker or to existing connectors. The profile binding via `targetProfile`, `focus.profile`, and `target.profile` is optional: operations without a profile binding return base FHIR resources.
 
-Beispiele für mögliche Profilbindungen:
+Examples of possible profile bindings:
 
-- MII-Kerndatensatz (MII KDS) im MII-Kontext
-- US Core für US-amerikanische Projekte
-- International Patient Summary (IPS) für internationale Szenarien
-- Eigene Projektprofile
-- Keine Profilbindung (FHIR-Basisressourcen)
+- MII Core Data Set (MII KDS) in the MII context
+- US Core for US-based projects
+- International Patient Summary (IPS) for international scenarios
+- Custom project profiles
+- No profile binding (base FHIR resources)

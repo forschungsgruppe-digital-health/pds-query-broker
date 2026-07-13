@@ -1,117 +1,120 @@
 # Query Broker
 
-> Version 0.2.0 · 2026-05-04 · [CHANGELOG](CHANGELOG.md)
+> Version 0.2.0 <!-- x-release-please-version --> · [CHANGELOG](CHANGELOG.md)
 
-**Föderierter Query Broker für die Integration verteilter Primärdatenquellen (PDS, Primary Data Source) über ein Patientenportal und Drittanwendungen.**
+**Federated query broker for integrating distributed primary data sources (PDS) via a patient portal and third-party applications.**
+
+> **Status:** specification-first. This repository currently contains the architecture, the FHIR Implementation Guide, the AsyncAPI transport contract, the message catalog, and the local infrastructure setup. The broker/connector implementation (`./gradlew …` commands below) is the planned target state and does not exist yet.
 
 ---
 
-## Überblick
+## Overview
 
-Der Query Broker verteilt Datenanfragen an mehrere Primärdatenquellen, aggregiert deren Antworten und liefert normalisierte FHIR R4 Bundles zurück — profilkonform zu den im Katalog konfigurierten Profilen. Die Architektur entkoppelt Transport (AMQP/RabbitMQ), Operationssemantik (FHIR OperationDefinition, MessageDefinition, GraphDefinition) und lokale Datenanbindung (Connector-Adapter) voneinander.
+The Query Broker distributes data queries to multiple primary data sources, aggregates their responses, and returns normalized FHIR R4 Bundles — conformant to the profiles configured in the catalog. The architecture decouples transport (AMQP/RabbitMQ), operation semantics (FHIR OperationDefinition, MessageDefinition, GraphDefinition), and local data access (connector adapters) from one another.
 
-### Designprinzipien
+### Design principles
 
-- **FHIR Messaging** — Alle Nachrichten sind FHIR R4 Bundles vom Typ `message` (vgl. [FHIR Messaging](https://hl7.org/fhir/R4/messaging.html)).
-- **Stabile Transportschicht** — AsyncAPI definiert nur die AMQP-Topologie. Die Nachrichtensemantik lebt in FHIR-Ressourcen.
-- **Profilkonformität** — Output-Ressourcen können über `targetProfile` an beliebige FHIR-Profile gebunden werden (z.B. MII KDS, US Core, eigene Projektprofile). Die Validierung im Connector-Stub ist konfigurierbar und greift nur, wenn ein `targetProfile` deklariert ist.
-- **Connector als Adapter** — Jeder PDS-Connector übersetzt zwischen Broker-Protokoll und lokalem Datensystem.
-- **Föderierte Pseudonymisierung** — MOSAiC / E-PIX / gPAS. Pseudonyme als FHIR `Identifier` in der `Parameters`-Ressource.
-- **Broadcast mit Self-Filtering** — Fanout Exchange; Connector filtert nach gPAS-Domäne und Capabilities.
-- **Daten-Provenienz und Verarbeitungsprotokoll** — `Provenance` dokumentiert Herkunft pro Ressource (PDS, Quellsystem), `AuditEvent` dokumentiert Verarbeitungsschritte. `Resource.meta.source` als leichtgewichtige Kurzreferenz. Alles FHIR-nativ, als Bundle-Einträge transportiert.
+- **FHIR Messaging** — All messages are FHIR R4 Bundles of type `message` (cf. [FHIR Messaging](https://hl7.org/fhir/R4/messaging.html)).
+- **Stable transport layer** — AsyncAPI defines only the AMQP topology. Message semantics live in FHIR resources.
+- **Profile conformance** — Output resources can be bound to arbitrary FHIR profiles via `targetProfile` (e.g. MII KDS, US Core, project-specific profiles). Validation in the connector stub is configurable and applies only when a `targetProfile` is declared.
+- **Connector as adapter** — Each PDS connector translates between the broker protocol and the local data system.
+- **Federated pseudonymization** — MOSAiC / E-PIX / gPAS. Pseudonyms travel as FHIR `Identifier` in the `Parameters` resource.
+- **Broadcast with self-filtering** — Fanout exchange; connectors filter by gPAS domain and capabilities.
+- **Data provenance and processing log** — `Provenance` documents origin per resource (PDS, source system), `AuditEvent` documents processing steps. `Resource.meta.source` serves as a lightweight short reference. All FHIR-native, transported as bundle entries.
 
-### Architekturüberblick
+### Architecture overview
 
 ```mermaid
 graph TB
-    subgraph Applikationsschicht
-        APP["Patientenportal / Drittanwendung<br/><i>Angular · SMART on FHIR</i>"]
+    subgraph "Application layer"
+        APP["Patient portal / third-party app<br/><i>Angular · SMART on FHIR</i>"]
     end
 
-    subgraph Integrationsschicht
-        BFF["BFF<br/><i>Session · PSN-Lookup · Response-Shaping</i>"]
+    subgraph "Integration layer"
+        BFF["BFF<br/><i>Session · PSN lookup · response shaping</i>"]
         BROKER["Query Broker Service<br/><i>Registry · Router · Aggregator</i>"]
-        MQ[("RabbitMQ<br/><i>Fanout Exchange</i>")]
+        MQ[("RabbitMQ<br/><i>Fanout exchange</i>")]
     end
 
-    subgraph "Nachrichtenkatalog (FHIR Server)"
-        OPDEF["OperationDefinition<br/><i>z.B. GetConditions</i>"]
+    subgraph "Message catalog (FHIR server)"
+        OPDEF["OperationDefinition<br/><i>e.g. GetConditions</i>"]
         MSGDEF["MessageDefinition"]
         GRAPHDEF["GraphDefinition"]
-        KDS["Projektprofile"]
+        KDS["Project profiles"]
         MSGDEF -->|"eventUri"| OPDEF
         OPDEF -->|"targetProfile"| KDS
         MSGDEF -->|"focus.profile"| KDS
         GRAPHDEF -->|"target.profile"| KDS
     end
 
-    subgraph "Föderierte THS"
+    subgraph "Federated THS"
         FTHS["E-PIX · gPAS"]
     end
 
-    subgraph "PDS-Standort"
+    subgraph "PDS site"
         CONN["Connector<br/><i>CapabilityStatement.messaging</i>"]
-        LTHS["Lok. THS"] --> SRC[("Lokales System")]
+        LTHS["Local THS"] --> SRC[("Local system")]
     end
 
     APP -->|"REST"| BFF
-    BFF -->|"PSN-Lookup"| FTHS
-    BFF -->|"FHIR Message Bundle"| BROKER
-    BROKER -->|"Katalog laden"| OPDEF
+    BFF -->|"PSN lookup"| FTHS
+    BFF -->|"FHIR message bundle"| BROKER
+    BROKER -->|"Load catalog"| OPDEF
     BROKER -->|"Publish"| MQ
     MQ -->|"Broadcast"| CONN
     CONN -->|"Response"| MQ
     CONN --> LTHS
-    CONN -->|"Katalog laden"| OPDEF
+    CONN -->|"Load catalog"| OPDEF
 ```
 
-### Beispieloperation
+### Example operation
 
-> Welche Operationen definiert werden und an welche Profile sie gebunden sind, wird im projektspezifischen Nachrichtenkatalog festgelegt. OperationDefinition-Namen folgen dem FHIR-Namensschema: PascalCase, Regex `[A-Z]([A-Za-z0-9_]){1,254}` (FHIR Constraint opd-0). Die Profilbindung (`targetProfile`) ist optional und projektspezifisch wählbar — z.B. MII KDS, US Core, IPS oder eigene Projektprofile. Operationen ohne `targetProfile` liefern FHIR-Basisressourcen zurück.
+> Which operations are defined and which profiles they are bound to is determined in the project-specific message catalog. OperationDefinition names follow the FHIR naming scheme: PascalCase, regex `[A-Z]([A-Za-z0-9_]){1,254}` (FHIR constraint opd-0). Profile binding (`targetProfile`) is optional and chosen per project — e.g. MII KDS, US Core, IPS, or custom project profiles. Operations without a `targetProfile` return base FHIR resources.
 
-Beispiel: Eine Operation `GetConditions` ruft Diagnosen eines pseudonymisierten Patienten ab. Über `targetProfile` kann die Ausgabe an ein beliebiges `Condition`-Profil gebunden werden — oder an den FHIR-Basistyp ohne weitere Einschränkung:
+Example: an operation `GetConditions` retrieves diagnoses of a pseudonymized patient. Via `targetProfile`, the output can be bound to any `Condition` profile — or to the FHIR base type without further constraints.
 
 ---
 
-## Schnellstart
+## Quick start
 
 ```bash
-docker compose up -d                    # RabbitMQ, Katalog-Server, Mock-THS
-./gradlew :broker:bootRun               # Broker starten
-./gradlew :connectors:pds-example:bootRun  # Referenz-Connector starten
+docker compose up -d                       # RabbitMQ, catalog server, mock THS
+./gradlew :broker:bootRun                  # start broker           (planned)
+./gradlew :connectors:pds-example:bootRun  # start reference connector (planned)
 ```
 
 ---
 
-## Dokumentation
+## Documentation
 
-| Dokument | Inhalt |
-|----------|--------|
-| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Arc42-Architekturdokumentation (12 Kapitel) |
-| **[PDS_INTEGRATION.md](PDS_INTEGRATION.md)** | Sprachagnostischer Implementierungsleitfaden für PDS-Entwickler |
-| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Broker/SDK-Entwicklung, Konformitätstests, neue Operationen definieren |
-| **[AsyncAPI Spec](specs/pds-connector-base.yaml)** | Transport-Contract (AMQP-Topologie) |
-| **[Nachrichtenkatalog](catalog/)** | OperationDefinitions, MessageDefinitions, GraphDefinitions |
+| Document | Content |
+|----------|---------|
+| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Arc42 architecture documentation (12 chapters) |
+| **[PDS_INTEGRATION.md](PDS_INTEGRATION.md)** | Language-agnostic implementation guide for PDS developers |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Broker/SDK development, conformance tests, defining new operations, branching & releases |
+| **[AGENTS.md](AGENTS.md)** | Operational context for AI coding agents (vendor-neutral) |
+| **[AsyncAPI spec](specs/pds-connector-base.yaml)** | Transport contract (AMQP topology) |
+| **[Message catalog](catalog/)** | OperationDefinitions, MessageDefinitions, GraphDefinitions |
 
 ---
 
 ## Standards
 
-| Komponente | Standard | Referenz |
-|------------|----------|----------|
-| Nachrichtenformat | FHIR R4 Messaging | [HL7](https://hl7.org/fhir/R4/messaging.html) |
-| Nachrichtenvertrag | FHIR MessageDefinition | [HL7](https://hl7.org/fhir/R4/messagedefinition.html) |
-| Operationsspezifikation | FHIR OperationDefinition | [HL7](https://hl7.org/fhir/R4/operationdefinition.html) |
-| Payload-Struktur | FHIR GraphDefinition | [HL7](https://hl7.org/fhir/R4/graphdefinition.html) |
-| Capability-Discovery | FHIR CapabilityStatement.messaging | [HL7](https://hl7.org/fhir/R4/capabilitystatement.html) |
-| Output-Profilierung | FHIR StructureDefinition (projektspezifisch wählbar) | [HL7](https://hl7.org/fhir/R4/structuredefinition.html) |
-| Daten-Provenienz | FHIR Provenance | [HL7](https://hl7.org/fhir/R4/provenance.html) |
-| Verarbeitungsprotokoll | FHIR AuditEvent | [HL7](https://hl7.org/fhir/R4/auditevent.html) |
+| Component | Standard | Reference |
+|-----------|----------|-----------|
+| Message format | FHIR R4 Messaging | [HL7](https://hl7.org/fhir/R4/messaging.html) |
+| Message contract | FHIR MessageDefinition | [HL7](https://hl7.org/fhir/R4/messagedefinition.html) |
+| Operation specification | FHIR OperationDefinition | [HL7](https://hl7.org/fhir/R4/operationdefinition.html) |
+| Payload structure | FHIR GraphDefinition | [HL7](https://hl7.org/fhir/R4/graphdefinition.html) |
+| Capability discovery | FHIR CapabilityStatement.messaging | [HL7](https://hl7.org/fhir/R4/capabilitystatement.html) |
+| Output profiling | FHIR StructureDefinition (project-specific) | [HL7](https://hl7.org/fhir/R4/structuredefinition.html) |
+| Data provenance | FHIR Provenance | [HL7](https://hl7.org/fhir/R4/provenance.html) |
+| Processing log | FHIR AuditEvent | [HL7](https://hl7.org/fhir/R4/auditevent.html) |
 | Transport | AMQP 0-9-1 / AsyncAPI 3.0 | [AsyncAPI](https://www.asyncapi.com/docs/reference/specification/v3.0.0) |
-| Pseudonymisierung | MOSAiC: E-PIX, gPAS | [THS Greifswald](https://www.ths-greifswald.de/forscher/mosaic-projekt/) |
-| Authentifizierung | SMART on FHIR / OAuth2 | [SMART](https://docs.smarthealthit.org/) |
-| Service-Verzeichnis | IHE mCSD | [IHE](https://profiles.ihe.net/ITI/mCSD/) |
+| Pseudonymization | MOSAiC: E-PIX, gPAS | [THS Greifswald](https://www.ths-greifswald.de/forscher/mosaic-projekt/) |
+| Authentication | SMART on FHIR / OAuth2 | [SMART](https://docs.smarthealthit.org/) |
+| Service directory | IHE mCSD | [IHE](https://profiles.ihe.net/ITI/mCSD/) |
 
-## Lizenz
+## License
 
-[TODO: Lizenz festlegen]
+[CC BY 4.0](LICENSE)

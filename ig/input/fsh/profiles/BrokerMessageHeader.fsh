@@ -3,11 +3,11 @@ Parent: MessageHeader
 Id: broker-message-header
 Title: "Query Broker MessageHeader"
 Description: """
-Profil für den MessageHeader in FHIR Message Bundles des Query Broker Protokolls.
+Profile for the MessageHeader in FHIR message Bundles of the Query Broker protocol.
 
-Formalisiert `eventUri` als kanonische OperationDefinition-URL, `destination`
-als Response-Routing-Ziel für Multi-Client-Fähigkeit und `source.endpoint`
-als AMQP-Adresse. In Antwort-Nachrichten ist `response` verpflichtend.
+Formalizes `eventUri` as the canonical OperationDefinition URL, `destination`
+as the response-routing target for multi-client capability, and `source.endpoint`
+as the AMQP address. In response messages, `response` is mandatory.
 """
 
 * ^url = "https://querybroker.example.org/fhir/StructureDefinition/BrokerMessageHeader"
@@ -16,29 +16,29 @@ als AMQP-Adresse. In Antwort-Nachrichten ist `response` verpflichtend.
 
 * event[x] only uri
 * eventUri 1..1
-* eventUri ^short = "Kanonische URL der OperationDefinition"
+* eventUri ^short = "Canonical URL of the OperationDefinition"
 
 * definition 0..1 MS
-* definition ^short = "Kanonische URL der MessageDefinition"
+* definition ^short = "Canonical URL of the MessageDefinition"
 
 * destination 1..* MS
 * destination.name 0..1 MS
-* destination.name ^short = "Name des anfragenden Systems"
+* destination.name ^short = "Name of the requesting system"
 * destination.endpoint 1..1
-* destination.endpoint ^short = "Response-Queue-URI des anfragenden Systems"
-* destination.endpoint ^definition = "AMQP-Queue, auf die der Broker die aggregierte Antwort publiziert. Format: amqp://{host}/responses.{system-id}"
+* destination.endpoint ^short = "Response queue URI of the requesting system"
+* destination.endpoint ^definition = "AMQP queue to which the broker publishes the aggregated response. Format: amqp://{host}/responses.{system-id}"
 
 * source 1..1
 * source.name 1..1 MS
-* source.name ^short = "Name der sendenden Komponente"
+* source.name ^short = "Name of the sending component"
 * source.endpoint 1..1
-* source.endpoint ^short = "AMQP-Endpoint der sendenden Komponente"
+* source.endpoint ^short = "AMQP endpoint of the sending component"
 
 * focus 1..* MS
-* focus ^short = "Referenzen auf die Payload-Ressourcen"
+* focus ^short = "References to the payload resources"
 
 * response 0..1 MS
 * response.identifier 1..1
-* response.identifier ^short = "MessageHeader.id der ursprünglichen Request-Nachricht"
+* response.identifier ^short = "MessageHeader.id of the original request message"
 * response.code 1..1
 * response.code ^short = "ok | transient-error | fatal-error"

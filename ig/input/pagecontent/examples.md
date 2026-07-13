@@ -1,12 +1,12 @@
-Diese Seite listet die FHIR-Beispielinstanzen dieses ImplementationGuides.
+This page lists the FHIR example instances of this ImplementationGuide.
 
 ### Messaging
 
-- [Request MessageHeader](MessageHeader-ExampleRequestMessageHeader.html) — Request-Nachricht mit `destination` für Response-Routing
-- [Response MessageHeader](MessageHeader-ExampleResponseMessageHeader.html) — Erfolgreiche Connector-Antwort mit `response.code = ok`
-- [Request Parameters](Parameters-ExampleRequestParameters.html) — Zwei standortspezifische Pseudonyme und ein optionaler Zeitfilter
+- [Request MessageHeader](MessageHeader-ExampleRequestMessageHeader.html) — Request message with `destination` for response routing
+- [Response MessageHeader](MessageHeader-ExampleResponseMessageHeader.html) — Successful connector response with `response.code = ok`
+- [Request Parameters](Parameters-ExampleRequestParameters.html) — Two site-specific pseudonyms and an optional date filter
 
-### Provenienz und Logging
+### Provenance and logging
 
-- [Provenance](Provenance-ExampleProvenance.html) — Herkunftsdokumentation: Organisation, Connector, Quellsystem
-- [AuditEvent](AuditEvent-ExampleAuditEvent.html) — Verarbeitungsprotokoll mit allen Detail-Keys
+- [Provenance](Provenance-ExampleProvenance.html) — Provenance documentation: organization, connector, source system
+- [AuditEvent](AuditEvent-ExampleAuditEvent.html) — Processing log with all detail keys

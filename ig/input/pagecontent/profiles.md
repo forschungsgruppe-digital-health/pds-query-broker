@@ -1,17 +1,17 @@
-Diese Seite beschreibt die vier Infrastrukturprofile des Query Broker Protokolls.
+This page describes the four infrastructure profiles of the Query Broker protocol.
 
 ### BrokerMessageHeader
 
-Profiliert `MessageHeader` für FHIR Messaging über AMQP. Verpflichtet `eventUri` (OperationDefinition-URL), `destination` (Response-Routing für Multi-Client-Fähigkeit) und `source` (AMQP-Endpoint). In Antwort-Nachrichten ist `response` mit Korrelations-ID und Status-Code verpflichtend.
+Profiles `MessageHeader` for FHIR messaging over AMQP. Requires `eventUri` (OperationDefinition URL), `destination` (response routing for multi-client capability), and `source` (AMQP endpoint). In response messages, `response` with a correlation ID and status code is mandatory.
 
 ### BrokerRequestParameters
 
-Profiliert `Parameters` mit Open Slicing. Der Slice `pseudonym` (1..*) ist ein typisierter `Identifier` mit `system` = Pseudonymisierungsdomäne und `value` = Pseudonym. Operationsspezifische Parameter werden durch `#open` Slicing unterstützt — sie müssen nicht im Profil deklariert werden, sondern ergeben sich aus der jeweiligen OperationDefinition.
+Profiles `Parameters` with open slicing. The slice `pseudonym` (1..*) is a typed `Identifier` with `system` = pseudonymization domain and `value` = pseudonym. Operation-specific parameters are supported through `#open` slicing — they do not have to be declared in the profile but are derived from the respective OperationDefinition.
 
 ### BrokerProvenance
 
-Profiliert `Provenance` mit Agent-Slicing: `performer` (Organisation/Standort) und `assembler` (Connector-Software). Entity mit Rolle `source` dokumentiert das lokale Quellsystem über `identifier` und `display`.
+Profiles `Provenance` with agent slicing: `performer` (organization/site) and `assembler` (connector software). An entity with role `source` documents the local source system via `identifier` and `display`.
 
 ### BrokerAuditEvent
 
-Profiliert `AuditEvent` mit Detail-Slicing für sechs standardisierte Keys: `operation`, `pseudonym-domain`, `source-system`, `profile-validation`, `result-count`, `duration-ms`. Alle Keys sind optional — welche gesetzt werden, hängt vom Verarbeitungsschritt ab.
+Profiles `AuditEvent` with detail slicing for six standardized keys: `operation`, `pseudonym-domain`, `source-system`, `profile-validation`, `result-count`, `duration-ms`. All keys are optional — which ones are set depends on the processing step.

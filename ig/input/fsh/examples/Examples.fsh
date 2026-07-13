@@ -4,7 +4,7 @@ Usage: #example
 Title: "Request MessageHeader"
 * eventUri = "https://querybroker.example.org/fhir/OperationDefinition/GetConditions"
 * definition = "https://querybroker.example.org/fhir/MessageDefinition/GetConditionsRequest"
-* destination[+].name = "Patientenportal"
+* destination[+].name = "Patient Portal"
 * destination[=].endpoint = "amqp://rabbitmq.example.org/responses.portal"
 * source.name = "Query Broker"
 * source.endpoint = "amqp://rabbitmq.example.org/pds.broadcast"
@@ -51,7 +51,7 @@ Title: "Provenance"
 * entity[+].role = #source
 * entity[=].what.identifier.system = "https://pds-a.example.org/systems/local"
 * entity[=].what.identifier.value = "condition/48291"
-* entity[=].what.display = "Lokales Datensystem"
+* entity[=].what.display = "Local data system"
 
 
 Instance: ExampleAuditEvent

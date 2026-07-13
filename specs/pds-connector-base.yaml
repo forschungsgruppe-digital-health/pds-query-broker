@@ -4,9 +4,9 @@ info:
   title: Query Broker — PDS Connector Base
   version: 1.0.0
   description: >
-    AsyncAPI-Spezifikation für die AMQP-Topologie des Query Broker Protokolls.
-    Definiert ausschließlich Transport-Channels und Content-Type.
-    Die Nachrichtensemantik wird durch FHIR-Ressourcen beschrieben
+    AsyncAPI specification for the AMQP topology of the Query Broker protocol.
+    Defines only transport channels and content type.
+    The message semantics are described by FHIR resources
     (OperationDefinition, MessageDefinition, GraphDefinition).
 
 servers:
@@ -14,7 +14,7 @@ servers:
     host: rabbitmq.example.org:5672
     protocol: amqp
     protocolVersion: 0-9-1
-    description: RabbitMQ Broker (Produktion)
+    description: RabbitMQ broker (production)
 
 defaultContentType: application/fhir+json
 
@@ -22,8 +22,8 @@ channels:
   pds.broadcast:
     address: pds.broadcast
     description: >
-      Fanout Exchange — der Broker publiziert Request-Bundles,
-      alle gebundenen PDS-Queues empfangen eine Kopie.
+      Fanout exchange — the broker publishes request Bundles,
+      all bound PDS queues receive a copy.
     messages:
       fhirMessageBundle:
         $ref: "#/components/messages/FhirMessageBundle"
@@ -31,11 +31,11 @@ channels:
   req.{pdsId}:
     address: req.{pdsId}
     description: >
-      PDS-spezifische Request-Queue, gebunden an pds.broadcast.
-      Jeder PDS-Connector konsumiert von seiner eigenen Queue.
+      PDS-specific request queue, bound to pds.broadcast.
+      Each PDS connector consumes from its own queue.
     parameters:
       pdsId:
-        description: Eindeutiger Identifier des PDS-Standorts
+        description: Unique identifier of the PDS site
     messages:
       fhirMessageBundle:
         $ref: "#/components/messages/FhirMessageBundle"
@@ -43,19 +43,19 @@ channels:
   responses.{systemId}:
     address: responses.{systemId}
     description: >
-      Systemspezifische Response-Queue. Der Broker publiziert
-      aggregierte Antworten auf die Queue, die im Request
-      über MessageHeader.destination.endpoint adressiert wurde.
+      System-specific response queue. The broker publishes
+      aggregated responses to the queue addressed in the request
+      via MessageHeader.destination.endpoint.
     parameters:
       systemId:
-        description: Identifier des anfragenden Systems (z.B. portal, cdss)
+        description: Identifier of the requesting system (e.g. portal, cdss)
     messages:
       fhirMessageBundle:
         $ref: "#/components/messages/FhirMessageBundle"
 
   pds.dlq:
     address: pds.dlq
-    description: Dead Letter Queue für nicht verarbeitbare Nachrichten.
+    description: Dead letter queue for unprocessable messages.
     messages:
       fhirMessageBundle:
         $ref: "#/components/messages/FhirMessageBundle"
@@ -65,19 +65,19 @@ operations:
     action: send
     channel:
       $ref: "#/channels/pds.broadcast"
-    summary: Broker publiziert Request-Bundle auf Fanout Exchange.
+    summary: Broker publishes the request Bundle to the fanout exchange.
 
   consumeRequest:
     action: receive
     channel:
       $ref: "#/channels/req.{pdsId}"
-    summary: PDS-Connector empfängt Request-Bundle von seiner Queue.
+    summary: PDS connector receives the request Bundle from its queue.
 
   publishResponse:
     action: send
     channel:
       $ref: "#/channels/responses.{systemId}"
-    summary: Broker publiziert aggregiertes Response-Bundle auf systemspezifische Queue.
+    summary: Broker publishes the aggregated response Bundle to the system-specific queue.
 
 components:
   messages:
@@ -86,9 +86,9 @@ components:
       title: FHIR Message Bundle
       contentType: application/fhir+json
       summary: >
-        FHIR R4 Bundle vom Typ "message". Erste Entry ist ein MessageHeader
-        mit eventUri (OperationDefinition-URL) und destination (Response-Routing).
-        Payload-Ressourcen werden über MessageHeader.focus referenziert.
+        FHIR R4 Bundle of type "message". The first entry is a MessageHeader
+        with eventUri (OperationDefinition URL) and destination (response routing).
+        Payload resources are referenced via MessageHeader.focus.
       traits:
         - $ref: "#/components/messageTraits/commonHeaders"
 
@@ -99,9 +99,9 @@ components:
         properties:
           correlationId:
             type: string
-            description: MessageHeader.id des ursprünglichen Requests (für Response-Korrelation).
+            description: MessageHeader.id of the original request (for response correlation).
           replyTo:
             type: string
             description: >
-              AMQP replyTo — systemspezifische Response-Queue.
-              Korreliert mit MessageHeader.destination.endpoint.
+              AMQP replyTo — system-specific response queue.
+              Correlates with MessageHeader.destination.endpoint.

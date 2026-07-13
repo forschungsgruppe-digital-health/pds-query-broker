@@ -1,38 +1,38 @@
 # Contributing
 
-> Version 0.2.0 · 2026-05-04
+> Version 0.2.0 <!-- x-release-please-version -->
 
-Dieses Dokument beschreibt, wie der Query Broker weiterentwickelt, getestet und um projektspezifische Operationen erweitert wird.
+This document describes how the Query Broker is developed, tested, and extended with project-specific operations.
 
 ---
 
-## 1. Entwicklungsumgebung einrichten
+## 1. Set up the development environment
 
 ```bash
-git clone https://github.com/[org]/query-broker.git
-cd query-broker
-docker compose up -d    # RabbitMQ (5672), Katalog-Server (8090), Mock-THS (8091)
-./gradlew build
+git clone https://github.com/forschungsgruppe-digital-health/pds-query-broker.git
+cd pds-query-broker
+cd docker && cp .env.example .env && docker compose up -d   # RabbitMQ (5672), catalog server (8090), AsyncAPI Studio
+./gradlew build   # planned — the broker/SDK implementation does not exist yet
 ```
 
 ---
 
-## 2. Einen PDS-Connector implementieren
+## 2. Implement a PDS connector
 
-### Schritt 1: Stub generieren
+### Step 1: Generate a stub
 
 ```bash
 asyncapi generate fromTemplate specs/pds-connector-base.yaml \
-  @asyncapi/java-spring-template -o ./connectors/pds-mein-standort
+  @asyncapi/java-spring-template -o ./connectors/pds-my-site
 ```
 
-### Schritt 2: Konfiguration
+### Step 2: Configuration
 
 ```yaml
 pds:
   connector:
-    pds-id: "PDS-MEIN-STANDORT"
-    gpas-domain: "https://ths.example.org/gpas/domain/PDS-MEIN-STANDORT"
+    pds-id: "PDS-MY-SITE"
+    gpas-domain: "https://ths.example.org/gpas/domain/PDS-MY-SITE"
     catalog-url: "https://catalog.example.org/fhir"
 
 spring:
@@ -43,16 +43,16 @@ spring:
     password: ${RABBITMQ_PASS}
     listener:
       simple:
-        queue: "req.PDS-MEIN-STANDORT"
+        queue: "req.PDS-MY-SITE"
 
 ths:
   local:
-    gpas-url: "https://ths.mein-standort.de/gpas"
+    gpas-url: "https://ths.my-site.example.org/gpas"
 ```
 
-### Schritt 3: Handler implementieren
+### Step 3: Implement a handler
 
-> Die Handler-Ausgabe muss dem in `targetProfile` deklarierten Profil entsprechen (sofern eines konfiguriert ist). Der Stub validiert vor dem Versand. Ohne `targetProfile` entfällt die Validierung.
+> The handler output must conform to the profile declared in `targetProfile` (if one is configured). The stub validates before sending. Without a `targetProfile`, validation is skipped.
 
 ```java
 @Component
@@ -78,93 +78,93 @@ public class OmopConditionHandler implements OperationHandler {
 }
 ```
 
-> Falls ein Profil konfiguriert ist (z.B. MII KDS Diagnose), fordert dieses typischerweise spezifische CodeSystem-Bindungen, Pflichtfelder und Extensions. Die konkreten Anforderungen ergeben sich aus dem jeweiligen `targetProfile`.
+> If a profile is configured (e.g. MII KDS Diagnose), it typically requires specific CodeSystem bindings, mandatory fields, and extensions. The concrete requirements follow from the respective `targetProfile`.
 
-### Schritt 4: Handler registrieren
+### Step 4: Register the handler
 
 ```java
 @Component
-public class MeinStandortConnector extends AbstractPdsConnector {
+public class MySiteConnector extends AbstractPdsConnector {
 
     @Override
-    public String getPdsId() { return "PDS-MEIN-STANDORT"; }
+    public String getPdsId() { return "PDS-MY-SITE"; }
 
     @Override
     public Map<String, OperationHandler> getHandlers() {
         return Map.of(
             "GetConditions",  conditionHandler,
-            // weitere Handler hier registrieren
+            // register further handlers here
         );
     }
 }
 ```
 
-> Keys in der Handler-Map verwenden den FHIR-konformen PascalCase-Namen der OperationDefinition (z.B. `GetConditions`, nicht `GET_CONDITIONS`).
+> Keys in the handler map use the FHIR-conformant PascalCase name of the OperationDefinition (e.g. `GetConditions`, not `GET_CONDITIONS`).
 
-### Schritt 5: RabbitMQ-Queue + Connector starten
+### Step 5: Declare the RabbitMQ queue + start the connector
 
 ```bash
-rabbitmqadmin declare queue name=req.PDS-MEIN-STANDORT durable=true \
+rabbitmqadmin declare queue name=req.PDS-MY-SITE durable=true \
   arguments='{"x-dead-letter-exchange":"pds.dlq"}'
-rabbitmqadmin declare binding source=pds.broadcast destination=req.PDS-MEIN-STANDORT
+rabbitmqadmin declare binding source=pds.broadcast destination=req.PDS-MY-SITE
 
-cd connectors/pds-mein-standort
+cd connectors/pds-my-site
 ./gradlew bootRun
-curl https://pds-mein-standort.example.org/connector/metadata | jq .messaging
+curl https://pds-my-site.example.org/connector/metadata | jq .messaging
 ```
 
 ---
 
-## 3. Konformitätstests ausführen
+## 3. Run conformance tests
 
 ```bash
 ./gradlew :conformance:test \
   -PopDefinition=GetConditions \
   -PcatalogUrl=http://localhost:8090/fhir \
-  -PconnectorClass=com.example.MeinStandortConnector \
+  -PconnectorClass=com.example.MySiteConnector \
   -PtestdataSet=./catalog/testdata/GetConditions/v1.0
 ```
 
-**Erwartete Ausgabe:**
+**Expected output:**
 
 ```console
-GetConditions v1.0 — Konformitätstest für PDS-MEIN-STANDORT
+GetConditions v1.0 — conformance test for PDS-MY-SITE
 ────────────────────────────────────────────────────────────
   synthetic-patient-001:
-    ✅ FHIR R4 Message Bundle valide
+    ✅ FHIR R4 message bundle valid
     ✅ MessageHeader.response.code = ok
-    ✅ Condition.meta.profile → konfiguriertes Profil
-    ✅ Condition.code verwendet ICD-10-GM
-    ✅ GraphDefinition: Encounter konform zu konfiguriertem Profil
-    ❌ Condition.recordedDate fehlt in 2/3 Ergebnissen
-       → Pflichtfeld laut konfiguriertem Profil
+    ✅ Condition.meta.profile → configured profile
+    ✅ Condition.code uses ICD-10-GM
+    ✅ GraphDefinition: Encounter conforms to configured profile
+    ❌ Condition.recordedDate missing in 2/3 results
+       → mandatory field per configured profile
 ```
 
 ---
 
-## 4. Projektspezifische Operationen definieren
+## 4. Define project-specific operations
 
-### Artefakte pro Operation
+### Artifacts per operation
 
 ```mermaid
 graph LR
-    subgraph "Tripel im Katalog"
-        OPDEF["OperationDefinition<br/><i>z.B. GetConditions</i>"]
+    subgraph "Triple in the catalog"
+        OPDEF["OperationDefinition<br/><i>e.g. GetConditions</i>"]
         MSGDEF["MessageDefinition<br/><i>GetConditionsRequest</i>"]
         GRAPHDEF["GraphDefinition<br/><i>GetConditionsResponseGraph</i>"]
     end
-    KDS["Projektprofil (optional)"]
+    KDS["Project profile (optional)"]
     HANDLER["Handler"]
 
     MSGDEF -->|"eventUri"| OPDEF
     OPDEF -->|"targetProfile"| KDS
     GRAPHDEF -->|"target.profile"| KDS
-    HANDLER -.->|"implementiert"| OPDEF
+    HANDLER -.->|"implements"| OPDEF
 ```
 
-### Beispiel: `GetConditions`
+### Example: `GetConditions`
 
-> OperationDefinition-Namen folgen dem FHIR-Namensschema: PascalCase, Constraint opd-0 (vgl. [FHIR R4 OperationDefinition](https://hl7.org/fhir/R4/operationdefinition.html)). Die vollständigen FHIR-JSON-Dateien der Beispieloperation liegen unter `catalog/`.
+> OperationDefinition names follow the FHIR naming scheme: PascalCase, constraint opd-0 (cf. [FHIR R4 OperationDefinition](https://hl7.org/fhir/R4/operationdefinition.html)). The complete FHIR JSON files of the example operation live under `catalog/`.
 
 **OperationDefinition** (`catalog/OperationDefinition/GetConditions.json`):
 
@@ -209,12 +209,12 @@ graph LR
 }
 ```
 
-**Katalog aktualisieren + Handler registrieren:**
+**Update the catalog + register the handler:**
 
 ```bash
 curl -X POST https://catalog.example.org/fhir/OperationDefinition \
   -H "Content-Type: application/fhir+json" -d @catalog/OperationDefinition/GetConditions.json
-# analog für MessageDefinition und GraphDefinition
+# analogous for MessageDefinition and GraphDefinition
 ```
 
 ```java
@@ -222,61 +222,80 @@ curl -X POST https://catalog.example.org/fhir/OperationDefinition \
 public Map<String, OperationHandler> getHandlers() {
     return Map.of(
         "GetConditions", conditionHandler
-        // weitere Handler hier registrieren
+        // register further handlers here
     );
 }
 ```
 
-### Checkliste
+### Checklist
 
-- [ ] OperationDefinition: `name` in PascalCase, `url` kanonisch, `return.part[].targetProfile` gesetzt (optional)
-- [ ] MessageDefinition (Request): `eventUri` → OperationDefinition, `allowedResponse` vollständig
-- [ ] MessageDefinition (Response): `focus.profile` → Projektprofil (falls konfiguriert)
-- [ ] GraphDefinition: `target.profile` für alle Knoten
-- [ ] Testdaten-Set mit mindestens zwei synthetischen Patienten
-- [ ] Konformitätstests bestanden
+- [ ] OperationDefinition: `name` in PascalCase, canonical `url`, `return.part[].targetProfile` set (optional)
+- [ ] MessageDefinition (request): `eventUri` → OperationDefinition, `allowedResponse` complete
+- [ ] MessageDefinition (response): `focus.profile` → project profile (if configured)
+- [ ] GraphDefinition: `target.profile` for all nodes
+- [ ] Test data set with at least two synthetic patients
+- [ ] Conformance tests passing
 
 ---
 
-## 5. Broker und SDK weiterentwickeln
+## 5. Develop the broker and SDK
 
-### Broker-Kernklassen
+### Broker core classes
 
-| Klasse | Verantwortlichkeit |
-|--------|-------------------|
-| `MessageDefinitionRegistry` | Katalog laden, FHIR Messages validieren |
-| `CapabilityRouter` | Routing via Pseudonym-Map + CapabilityStatement.messaging |
+| Class | Responsibility |
+|-------|----------------|
+| `MessageDefinitionRegistry` | Load the catalog, validate FHIR messages |
+| `CapabilityRouter` | Routing via pseudonym map + CapabilityStatement.messaging |
 | `QueryBrokerService` | Fan-out, correlationId |
-| `ResponseAggregator` | Korrelation via `MessageHeader.response.identifier`, Timeout → `OperationOutcome` |
+| `ResponseAggregator` | Correlation via `MessageHeader.response.identifier`, timeout → `OperationOutcome` |
 
-### SDK-Kernklassen
+### SDK core classes
 
-| Klasse | Verantwortlichkeit |
-|--------|-------------------|
-| `AbstractPdsConnector` | FHIR Message Parsing, Pseudonym-Filtering, Dispatch, Profilvalidierung |
+| Class | Responsibility |
+|-------|----------------|
+| `AbstractPdsConnector` | FHIR message parsing, pseudonym filtering, dispatch, profile validation |
 | `OperationHandler` | `Bundle execute(String pseudonym, Parameters params)` |
-| `FhirProfileValidator` | Validierung gegen konfigurierte StructureDefinitions + GraphDefinition |
-| `CapabilityStatementGenerator` | Generiert CapabilityStatement aus Handler-Map |
+| `FhirProfileValidator` | Validation against configured StructureDefinitions + GraphDefinition |
+| `CapabilityStatementGenerator` | Generates a CapabilityStatement from the handler map |
 
-> FHIR-Profilpakete werden als Dependency im SDK eingebunden — welche Pakete, hängt vom Projektkontext ab.
+> FHIR profile packages are included as dependencies in the SDK — which packages depends on the project context.
 
 ---
 
-## 6. Code-Konventionen
+## 6. Branching model & code conventions
+
+This repository uses **trunk-based development**:
+
+- `main` is the trunk and the only long-lived branch. It must always be releasable.
+- All changes go through **short-lived branches** (`feat/*`, `fix/*`, `docs/*`, `chore/*`, …) merged into `main` via pull request — small, focused PRs; squash-merge with a Conventional-Commit PR title.
+- There are **no** `develop` or `release/*` branches. Releases are cut from `main` (see § 7).
+
+Conventions:
 
 - Java 17+, Spring Boot, HAPI FHIR, JUnit 5 + AssertJ, Testcontainers
-- [Conventional Commits](https://www.conventionalcommits.org/) — Scopes: `broker`, `connector-sdk`, `conformance`, `catalog`, `specs`, `docs`
-- Branches: `main` (stabil), `develop`, `feature/*`, `release/*`
+- Documentation and code are written in **English**.
+- [Conventional Commits](https://www.conventionalcommits.org/) — commit types drive semantic versioning (see § 7). Scopes: `broker`, `connector-sdk`, `conformance`, `catalog`, `specs`, `ig`, `docs`, `docker`
 
 ---
 
-## 7. Release-Prozess
+## 7. Release process
 
-| Komponente | Versionierung |
-|------------|---------------|
-| Broker / SDK | Semver |
-| AsyncAPI Spec | Semver (info.version) |
-| OperationDefinition | Semver (version-Feld) |
-| MessageDefinition | Gebunden an OperationDefinition-Version |
+Releases are fully automated with [release-please](https://github.com/googleapis/release-please) and follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
 
-**Kompatibilitätsgarantien:** AsyncAPI Major nur bei Breaking Changes. SDK Minor Drop-in. OperationDefinitions additiv (neue optionale Parameter). Breaking Changes → neue Operation oder Major-Version.
+1. Commits merged to `main` with Conventional-Commit messages accumulate in a **release PR** that release-please keeps up to date (version bump + CHANGELOG section generated from the commit messages).
+2. Merging the release PR creates the git tag (`vX.Y.Z`), the GitHub release, and updates `version.txt`, `CHANGELOG.md`, and the version headers in `README.md`/`CONTRIBUTING.md`.
+3. Version bump rules (pre-1.0, `bump-minor-pre-major`): `feat:` → minor, `fix:`/`perf:` → patch, `feat!:`/`BREAKING CHANGE:` → minor. `docs:`, `chore:`, `ci:`, `refactor:`, `test:` do not trigger a release on their own.
+
+Do not edit `CHANGELOG.md`, `version.txt`, or `.release-please-manifest.json` by hand — release-please owns them.
+
+### Versioned artifacts
+
+| Component | Versioning |
+|-----------|------------|
+| Repository / broker / SDK | SemVer via release-please (tag `vX.Y.Z`) |
+| AsyncAPI spec | SemVer (`info.version`) |
+| FHIR IG | `version` in `ig/sushi-config.yaml` |
+| OperationDefinition | SemVer (`version` field) |
+| MessageDefinition | Bound to the OperationDefinition version |
+
+**Compatibility guarantees:** AsyncAPI major only on breaking changes. SDK minor releases are drop-in. OperationDefinitions evolve additively (new optional parameters). Breaking changes → new operation or major version.

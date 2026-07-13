@@ -1,6 +1,6 @@
 #!/bin/sh
-# Lädt alle FHIR-Ressourcen (OperationDefinition, MessageDefinition,
-# GraphDefinition) aus dem catalog/-Verzeichnis in den Katalog-Server.
+# Loads all FHIR resources (OperationDefinition, MessageDefinition,
+# GraphDefinition) from the catalog/ directory into the catalog server.
 
 set -e
 
@@ -8,17 +8,17 @@ CATALOG_URL="${CATALOG_URL:-http://catalog-server:8080/fhir}"
 MAX_RETRIES=30
 RETRY_INTERVAL=2
 
-echo "Warte auf Katalog-Server: ${CATALOG_URL}/metadata"
+echo "Waiting for catalog server: ${CATALOG_URL}/metadata"
 for i in $(seq 1 $MAX_RETRIES); do
     if curl -sf "${CATALOG_URL}/metadata" > /dev/null 2>&1; then
-        echo "Katalog-Server erreichbar."
+        echo "Catalog server reachable."
         break
     fi
     if [ "$i" -eq "$MAX_RETRIES" ]; then
-        echo "Katalog-Server nicht erreichbar nach ${MAX_RETRIES} Versuchen."
+        echo "Catalog server not reachable after ${MAX_RETRIES} attempts."
         exit 1
     fi
-    echo "  Versuch $i/$MAX_RETRIES ..."
+    echo "  Attempt $i/$MAX_RETRIES ..."
     sleep $RETRY_INTERVAL
 done
 
@@ -49,5 +49,5 @@ for dir in OperationDefinition MessageDefinition GraphDefinition; do
 done
 
 echo ""
-echo "Seed abgeschlossen: ${LOADED} geladen, ${FAILED} fehlgeschlagen."
+echo "Seed complete: ${LOADED} loaded, ${FAILED} failed."
 [ "$FAILED" -eq 0 ] || exit 1
