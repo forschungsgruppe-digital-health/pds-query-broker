@@ -265,6 +265,16 @@ for each fhirResource:
 return bundle
 ```
 
+> **Wire-format note (correlation):** correlation is carried in the AMQP
+> message properties — `correlation-id` (the request MessageHeader id) and
+> `reply-to` (the queue your response must be published to). On the wire the
+> request MessageHeader may carry its id **only in the entry `fullUrl`**
+> (`urn:uuid:<id>`) rather than as `resource.id`; derive
+> `MessageHeader.response.identifier` from the fullUrl (strip the `urn:uuid:`
+> prefix) or simply echo the AMQP `correlation-id` property. See the executable
+> reference in `tools/asyncapi-stub/` (a Python connector built purely from
+> the AsyncAPI spec).
+
 ---
 
 ## 7. Registering a handler

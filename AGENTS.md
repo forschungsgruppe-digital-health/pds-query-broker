@@ -42,6 +42,9 @@ On conflict, this file wins.
 - **Start the dev stack:** `cd docker && cp .env.example .env && docker compose up -d`
   (RabbitMQ 5672/15672, catalog server 8090, AsyncAPI Studio)
 - **Validate AsyncAPI:** `asyncapi validate specs/pds-connector-base.yaml`
+- **AsyncAPI contract test:** `pytest tools/asyncapi-stub/test_contract.py` against a running
+  compose stack — generates a Python connector stub from the spec and verifies it interoperates
+  with the live broker (see `tools/asyncapi-stub/README.md`; CI: `asyncapi-contract-test.yml`)
 - **Build + test the implementation:** `./gradlew build` (unit + Testcontainers integration tests;
   needs a Docker daemon). Single apps: `./gradlew :broker:bootRun`,
   `./gradlew :connectors:pds-example:bootRun`

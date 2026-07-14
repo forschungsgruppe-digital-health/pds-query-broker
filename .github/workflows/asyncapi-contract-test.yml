@@ -1,0 +1,55 @@
+name: AsyncAPI Contract Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'specs/**'
+      - 'tools/asyncapi-stub/**'
+      - 'broker/**'
+      - 'connector-sdk/**'
+      - 'docker/**'
+      - 'catalog/**'
+      - '.github/workflows/asyncapi-contract-test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'specs/**'
+      - 'tools/asyncapi-stub/**'
+      - 'broker/**'
+      - 'connector-sdk/**'
+      - 'docker/**'
+      - 'catalog/**'
+      - '.github/workflows/asyncapi-contract-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract-test:
+    name: Spec-generated Python connector vs live broker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependencies
+        run: pip install -r tools/asyncapi-stub/requirements.txt
+
+      - name: Start broker stack (RabbitMQ, catalog + seed, broker)
+        working-directory: docker
+        run: |
+          cp .env.example .env
+          docker compose up -d --wait broker
+
+      - name: Run contract test
+        run: pytest tools/asyncapi-stub/test_contract.py -v
+
+      - name: Stack logs on failure
+        if: failure()
+        working-directory: docker
+        run: docker compose logs --tail 100 broker rabbitmq catalog-seed
