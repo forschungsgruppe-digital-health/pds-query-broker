@@ -34,8 +34,8 @@ as the AMQP address. In response messages, `response` is mandatory.
 * source.endpoint 1..1
 * source.endpoint ^short = "AMQP endpoint of the sending component"
 
-* focus 1..* MS
-* focus ^short = "References to the payload resources"
+* focus 0..* MS
+* focus ^short = "References to the payload resources (absent in empty-result responses)"
 
 * response 0..1 MS
 * response.identifier 1..1

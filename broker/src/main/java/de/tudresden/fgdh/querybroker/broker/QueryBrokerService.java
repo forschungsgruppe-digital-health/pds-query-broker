@@ -108,7 +108,7 @@ public class QueryBrokerService {
     return aggregated;
   }
 
-  private Bundle aggregate(MessageHeader requestHeader, int expected, List<Bundle> responses) {
+  Bundle aggregate(MessageHeader requestHeader, int expected, List<Bundle> responses) {
     List<Resource> payload = new java.util.ArrayList<>();
     for (Bundle response : responses) {
       response.getEntry().stream()
@@ -116,6 +116,12 @@ public class QueryBrokerService {
           .filter(r -> !(r instanceof MessageHeader))
           .forEach(payload::add);
     }
+
+    boolean anyOk =
+        responses.stream()
+            .map(BrokerMessages::messageHeaderOf)
+            .flatMap(java.util.Optional::stream)
+            .anyMatch(h -> h.getResponse().getCode() == ResponseType.OK);
 
     ResponseType code;
     if (responses.isEmpty()) {
@@ -128,6 +134,9 @@ public class QueryBrokerService {
               "No addressed PDS responded within "
                   + properties.aggregatorTimeoutMs()
                   + " ms; the request produced no result."));
+    } else if (!anyOk) {
+      // Every responding PDS failed — an ok would misrepresent the result.
+      code = ResponseType.FATALERROR;
     } else {
       code = ResponseType.OK;
       if (responses.size() < expected) {
