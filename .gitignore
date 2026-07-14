@@ -35,3 +35,9 @@ Thumbs.db
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
+
+# Generated AsyncAPI stub + contract-test venv
+tools/asyncapi-stub/qb_stub.py
+tools/asyncapi-stub/__pycache__/
+.venv-contract/
+.pytest_cache/

@@ -1,0 +1,312 @@
+"""AsyncAPI contract test: a Python PDS connector built ONLY from the spec.
+
+Proves that the transport contract in specs/pds-connector-base.yaml is what
+the running system actually speaks. The test generates qb_stub.py from the
+spec, then plays two roles against the live broker + RabbitMQ (compose stack):
+
+- a mock PDS connector ("PDS-PYSTUB"): declares its request queue and the
+  broadcast binding exactly as the spec's AMQP bindings describe, consumes a
+  request, asserts the spec'd wire facts (content type, correlation-id,
+  reply-to, delivery mode), and answers with MOCK FHIR data;
+- a mock requesting system ("pystub"): submits a request addressed to its
+  spec-pattern response queue and asserts the aggregated bundle arrives there
+  with the echoed correlation-id — carrying the mock data.
+
+If the spec changes structurally, stub generation or these assertions fail;
+if the implementation drifts from the spec, the assertions fail. Environment:
+BROKER_HTTP (default http://localhost:8080), RABBITMQ_HOST/PORT/USER/PASS.
+"""
+
+import importlib
+import json
+import os
+import subprocess
+import sys
+import threading
+import time
+import uuid
+from pathlib import Path
+
+import pika
+import pytest
+import requests
+
+HERE = Path(__file__).resolve().parent
+
+BROKER_HTTP = os.environ.get("BROKER_HTTP", "http://localhost:8080")
+RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", "5672"))
+RABBITMQ_USER = os.environ.get("RABBITMQ_USER", "broker")
+RABBITMQ_PASS = os.environ.get("RABBITMQ_PASS", "broker")
+
+PDS_ID = "PDS-PYSTUB"
+SYSTEM_ID = "pystub"
+GPAS_DOMAIN = f"https://ths.example.org/gpas/domain/{PDS_ID}"
+GET_CONDITIONS = "https://querybroker.example.org/fhir/OperationDefinition/GetConditions"
+MOCK_PSEUDONYM = "PSN-PYSTUB-0001"
+MOCK_CONDITION_CODE = "MOCK-C61"
+
+
+@pytest.fixture(scope="session")
+def stub():
+    subprocess.run([sys.executable, str(HERE / "generate_stub.py")], check=True)
+    sys.path.insert(0, str(HERE))
+    module = importlib.import_module("qb_stub")
+    importlib.reload(module)
+    return module
+
+
+@pytest.fixture(scope="session")
+def amqp():
+    credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
+    parameters = pika.ConnectionParameters(
+        host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials
+    )
+    connection = pika.BlockingConnection(parameters)
+    yield connection
+    connection.close()
+
+
+def mock_request_bundle(destination_endpoint: str) -> dict:
+    """Mock BrokerRequestBundle addressing only the Python stub site."""
+    header_id = str(uuid.uuid4())
+    params_id = str(uuid.uuid4())
+    return {
+        "resourceType": "Bundle",
+        "type": "message",
+        "timestamp": "2026-07-14T09:00:00Z",
+        "entry": [
+            {
+                "fullUrl": f"urn:uuid:{header_id}",
+                "resource": {
+                    "resourceType": "MessageHeader",
+                    "id": header_id,
+                    "eventUri": GET_CONDITIONS,
+                    "destination": [
+                        {"name": "PyStub Requester", "endpoint": destination_endpoint}
+                    ],
+                    "source": {
+                        "name": "PyStub Requester",
+                        "endpoint": destination_endpoint,
+                    },
+                    "focus": [{"reference": f"urn:uuid:{params_id}"}],
+                },
+            },
+            {
+                "fullUrl": f"urn:uuid:{params_id}",
+                "resource": {
+                    "resourceType": "Parameters",
+                    "id": params_id,
+                    "parameter": [
+                        {
+                            "name": "pseudonym",
+                            "valueIdentifier": {
+                                "system": GPAS_DOMAIN,
+                                "value": MOCK_PSEUDONYM,
+                            },
+                        }
+                    ],
+                },
+            },
+        ],
+    }
+
+
+def mock_response_bundle(request_bundle: dict, source_endpoint: str) -> dict:
+    """Mock BrokerResponseBundle with one obviously-synthetic Condition."""
+    request_entry = request_bundle["entry"][0]
+    request_header = request_entry["resource"]
+    # On the wire the id may live only in the entry fullUrl (urn:uuid:...) —
+    # the broker's serializer omits resource.id when it is fullUrl-derived.
+    request_id = request_header.get(
+        "id", request_entry.get("fullUrl", "")
+    ).removeprefix("urn:uuid:")
+    header_id = str(uuid.uuid4())
+    condition_id = str(uuid.uuid4())
+    return {
+        "resourceType": "Bundle",
+        "type": "message",
+        "timestamp": "2026-07-14T09:00:01Z",
+        "entry": [
+            {
+                "fullUrl": f"urn:uuid:{header_id}",
+                "resource": {
+                    "resourceType": "MessageHeader",
+                    "id": header_id,
+                    "eventUri": request_header["eventUri"],
+                    "destination": request_header["destination"],
+                    "source": {"name": f"{PDS_ID} Connector", "endpoint": source_endpoint},
+                    "response": {
+                        "identifier": request_id,
+                        "code": "ok",
+                    },
+                    "focus": [{"reference": f"urn:uuid:{condition_id}"}],
+                },
+            },
+            {
+                "fullUrl": f"urn:uuid:{condition_id}",
+                "resource": {
+                    "resourceType": "Condition",
+                    "id": condition_id,
+                    "code": {
+                        "coding": [
+                            {
+                                "system": "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
+                                "code": MOCK_CONDITION_CODE,
+                                "display": "Mock condition (synthetic)",
+                            }
+                        ]
+                    },
+                    "subject": {"display": "Mock Testpatient (pseudonymized)"},
+                },
+            },
+        ],
+    }
+
+
+class MockPdsConnector(threading.Thread):
+    """A PDS connector implemented purely from the generated spec stub.
+
+    The whole pika connection lives inside this thread (BlockingConnection is
+    not thread-safe across threads); `ready` is set once the queue is bound,
+    so the request cannot be published before the topology exists.
+    """
+
+    def __init__(self, stub):
+        super().__init__(daemon=True)
+        self.stub = stub
+        self.received = None  # (method, properties, body)
+        self.error = None
+        self.ready = threading.Event()
+        self.queue = stub.request_queue(PDS_ID)
+
+    def run(self):
+        try:
+            credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials
+                )
+            )
+            channel = connection.channel()
+            # Topology exactly as the spec's AMQP bindings describe it.
+            channel.exchange_declare(
+                exchange=self.stub.BROADCAST_EXCHANGE,
+                exchange_type=self.stub.BROADCAST_EXCHANGE_TYPE,
+                durable=self.stub.BROADCAST_EXCHANGE_DURABLE,
+            )
+            channel.queue_declare(
+                queue=self.queue,
+                durable=self.stub.REQUEST_QUEUE_DURABLE,
+                arguments={"x-dead-letter-exchange": self.stub.DEAD_LETTER_QUEUE},
+            )
+            channel.queue_bind(queue=self.queue, exchange=self.stub.BROADCAST_EXCHANGE)
+            self.ready.set()
+
+            for method, properties, body in channel.consume(
+                self.queue, inactivity_timeout=30
+            ):
+                if method is None:
+                    self.error = "no request received within 30 s"
+                    return
+                self.received = (method, properties, body)
+                request = json.loads(body)
+                response = mock_response_bundle(request, f"amqp://rabbitmq/{self.queue}")
+                # Reply leg per operation publishConnectorResponse: default
+                # exchange, routing key = the AMQP reply-to property.
+                channel.basic_publish(
+                    exchange="",
+                    routing_key=properties.reply_to,
+                    body=json.dumps(response),
+                    properties=pika.BasicProperties(
+                        content_type=self.stub.CONTENT_TYPE,
+                        correlation_id=properties.correlation_id,
+                        delivery_mode=self.stub.DELIVERY_MODE_CONNECTOR_RESPONSE,
+                    ),
+                )
+                channel.basic_ack(method.delivery_tag)
+                channel.cancel()
+                connection.close()
+                return
+        except Exception as e:  # surfaced by the main thread's assertions
+            self.error = repr(e)
+            self.ready.set()
+
+
+def test_spec_declares_the_expected_protocol_surface(stub):
+    assert stub.CONTENT_TYPE == "application/fhir+json"
+    assert stub.BROADCAST_EXCHANGE_TYPE == "fanout"
+    assert stub.request_queue(PDS_ID) == f"req.{PDS_ID}"
+    assert stub.response_queue(SYSTEM_ID) == f"responses.{SYSTEM_ID}"
+
+
+def test_spec_built_connector_interoperates_with_the_live_broker(stub, amqp):
+    # Mock requester: response queue per the spec's responses.{systemId} pattern.
+    response_queue = stub.response_queue(SYSTEM_ID)
+    requester = amqp.channel()
+    requester.queue_declare(queue=response_queue, durable=stub.RESPONSE_QUEUE_DURABLE)
+    while requester.basic_get(response_queue, auto_ack=True) != (None, None, None):
+        pass  # drain leftovers from previous runs
+
+    connector = MockPdsConnector(stub)
+    connector.start()
+    assert connector.ready.wait(10), "mock connector failed to set up its topology"
+    assert connector.error is None, connector.error
+
+    request = mock_request_bundle(f"amqp://rabbitmq/{response_queue}")
+    http_response = requests.post(
+        f"{BROKER_HTTP}/fhir/$process-message",
+        data=json.dumps(request),
+        headers={"Content-Type": stub.CONTENT_TYPE},
+        timeout=30,
+    )
+    connector.join(timeout=30)
+
+    # --- connector state first: it is the component under test --------------
+    assert connector.error is None, connector.error
+    assert connector.received is not None, "mock connector never received the request"
+
+    # --- HTTP (ingress convenience) ---------------------------------------
+    assert http_response.status_code == 200, http_response.text
+    aggregated = http_response.json()
+    header = aggregated["entry"][0]["resource"]
+    assert header["resourceType"] == "MessageHeader"
+    assert header["response"]["code"] == "ok"
+    codes = [
+        e["resource"]["code"]["coding"][0]["code"]
+        for e in aggregated["entry"]
+        if e["resource"]["resourceType"] == "Condition"
+    ]
+    assert codes == [MOCK_CONDITION_CODE], "mock data must round-trip through aggregation"
+
+    # --- wire facts on the request the connector received -------------------
+    _, properties, body = connector.received
+    assert properties.content_type == stub.CONTENT_TYPE
+    assert properties.correlation_id, "correlation-id AMQP property must be set"
+    assert properties.reply_to and properties.reply_to.startswith("responses."), (
+        "reply-to must name a responses.{systemId} queue, got %r" % properties.reply_to
+    )
+    assert properties.delivery_mode == stub.DELIVERY_MODE_REQUEST
+    wire_request = json.loads(body)
+    assert wire_request["type"] == "message"
+    assert wire_request["entry"][0]["resource"]["resourceType"] == "MessageHeader"
+
+    # --- ADR-009: aggregated bundle on the requester's spec-pattern queue ---
+    routed = None
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        method, props, routed_body = requester.basic_get(response_queue, auto_ack=True)
+        if method is not None:
+            routed = (props, routed_body)
+            break
+        time.sleep(0.5)
+    assert routed is not None, f"no aggregated bundle arrived on {response_queue}"
+    props, routed_body = routed
+    assert props.correlation_id == properties.correlation_id
+    routed_bundle = json.loads(routed_body)
+    routed_codes = [
+        e["resource"]["code"]["coding"][0]["code"]
+        for e in routed_bundle["entry"]
+        if e["resource"]["resourceType"] == "Condition"
+    ]
+    assert routed_codes == [MOCK_CONDITION_CODE]
