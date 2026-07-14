@@ -68,8 +68,7 @@
       {
         "id": "MessageHeader.focus",
         "path": "MessageHeader.focus",
-        "short": "References to the payload resources",
-        "min": 1,
+        "short": "References to the payload resources (absent in empty-result responses)",
         "mustSupport": true
       },
       {

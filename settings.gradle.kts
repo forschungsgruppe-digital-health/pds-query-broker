@@ -8,3 +8,4 @@ rootProject.name = "pds-query-broker"
 include("connector-sdk")
 include("broker")
 include("connectors:pds-example")
+include("conformance")

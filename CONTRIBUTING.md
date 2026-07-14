@@ -117,28 +117,25 @@ curl https://pds-my-site.example.org/connector/metadata | jq .messaging
 
 ## 3. Run conformance tests
 
+The `conformance` Gradle module pins the protocol behavior of ANY connector against the IG (profiles are loaded from the `catalog/` mirror — the harness always tests against the IG as published):
+
 ```bash
-./gradlew :conformance:test \
-  -PopDefinition=GetConditions \
-  -PcatalogUrl=http://localhost:8090/fhir \
-  -PconnectorClass=com.example.MySiteConnector \
-  -PtestdataSet=./catalog/testdata/GetConditions/v1.0
+./gradlew :conformance:test
 ```
 
-**Expected output:**
+To put your own connector under the harness, extend `PdsConnectorConformanceTest` and provide the connector plus synthetic pseudonyms (see `ExampleConnectorConformanceTest` for the living example):
 
-```console
-GetConditions v1.0 — conformance test for PDS-MY-SITE
-────────────────────────────────────────────────────────────
-  synthetic-patient-001:
-    ✅ FHIR R4 message bundle valid
-    ✅ MessageHeader.response.code = ok
-    ✅ Condition.meta.profile → configured profile
-    ✅ Condition.code uses ICD-10-GM
-    ✅ GraphDefinition: Encounter conforms to configured profile
-    ❌ Condition.recordedDate missing in 2/3 results
-       → mandatory field per configured profile
+```java
+class MySiteConformanceTest extends PdsConnectorConformanceTest {
+  @Override protected AbstractPdsConnector connector() { return mySiteConnector; }
+  @Override protected String knownPseudonym() { return "PSN-SYNTH-0001"; }
+  @Override protected String emptyResultPseudonym() { return "PSN-SYNTH-EMPTY"; }
+  @Override protected String unresolvablePseudonym() { return "PSN-SYNTH-UNKNOWN"; }
+  @Override protected String supportedOperation() { return ".../OperationDefinition/GetConditions"; }
+}
 ```
+
+The harness asserts: profile-valid request/response envelopes (BrokerRequestBundle/BrokerResponseBundle incl. invariants), correlation (`response.identifier`), empty-result validity, the machine-readable error model (BrokerErrorCodes), and self-filtering silence for foreign domains and unsupported operations. Only synthetic pseudonyms and obviously artificial test data may be used. (Planned extension: catalog-driven golden datasets under `catalog/testdata/` and `targetProfile` payload validation.)
 
 ---
 
