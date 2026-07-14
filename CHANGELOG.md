@@ -8,6 +8,13 @@ From v0.2.0 onward, releases and changelog entries are generated automatically b
 Entries up to and including v0.2.0 were written manually following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.3.0...v0.4.0) (2026-07-14)
+
+
+### Features
+
+* multi-PDS fan-out — second synthetic connector site (increment 2) ([#6](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/6)) ([89ef488](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/89ef4885f5f189c389928d177d216a4e3ee438de))
+
 ## [0.3.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.2.0...v0.3.0) (2026-07-13)
 
 
