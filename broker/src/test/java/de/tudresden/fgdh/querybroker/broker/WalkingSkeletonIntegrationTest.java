@@ -40,6 +40,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class WalkingSkeletonIntegrationTest {
 
   private static final String EXAMPLE_DOMAIN = "https://ths.example.org/gpas/domain/PDS-EXAMPLE";
+  private static final String EXAMPLE_B_DOMAIN =
+      "https://ths.example.org/gpas/domain/PDS-EXAMPLE-B";
   private static final String UNKNOWN_DOMAIN = "https://ths.example.org/gpas/domain/PDS-GHOST";
   private static final String GET_CONDITIONS =
       "https://querybroker.example.org/fhir/OperationDefinition/GetConditions";
@@ -64,6 +66,7 @@ class WalkingSkeletonIntegrationTest {
   private static final HttpClient HTTP = HttpClient.newHttpClient();
 
   private static ConfigurableApplicationContext connectorContext;
+  private static ConfigurableApplicationContext connectorBContext;
   private static ConfigurableApplicationContext brokerContext;
   private static String brokerUrl;
 
@@ -89,6 +92,20 @@ class WalkingSkeletonIntegrationTest {
                 "--pds.connector.pseudonyms.PSN-EXAMPLE-0001=internal-0001",
                 "--pds.connector.pseudonyms.PSN-EXAMPLE-0002=internal-0002");
 
+    // Second synthetic PDS site: own queue, own pseudonym domain, disjoint data.
+    connectorBContext =
+        new SpringApplicationBuilder(PdsExampleApplication.class)
+            .run(
+                "--spring.main.web-application-type=none",
+                "--spring.rabbitmq.host=" + RABBIT.getHost(),
+                "--spring.rabbitmq.port=" + RABBIT.getAmqpPort(),
+                "--spring.rabbitmq.username=" + RABBIT.getAdminUsername(),
+                "--spring.rabbitmq.password=" + RABBIT.getAdminPassword(),
+                "--pds.connector.pds-id=PDS-EXAMPLE-B",
+                "--pds.connector.gpas-domain=" + EXAMPLE_B_DOMAIN,
+                "--pds.connector.request-queue=req.PDS-EXAMPLE-B",
+                "--pds.connector.pseudonyms.PSN-B-0001=internal-0002");
+
     brokerContext =
         new SpringApplicationBuilder(BrokerApplication.class)
             .run(
@@ -110,9 +127,28 @@ class WalkingSkeletonIntegrationTest {
     if (brokerContext != null) {
       brokerContext.close();
     }
+    if (connectorBContext != null) {
+      connectorBContext.close();
+    }
     if (connectorContext != null) {
       connectorContext.close();
     }
+  }
+
+  @Test
+  void federatedQueryAggregatesAcrossMultiplePdsSites() throws Exception {
+    Bundle request =
+        request(
+            pseudonym("PSN-EXAMPLE-0001", EXAMPLE_DOMAIN), pseudonym("PSN-B-0001", EXAMPLE_B_DOMAIN));
+
+    Bundle aggregated = postProcessMessage(request, 200);
+
+    MessageHeader header = BrokerMessages.messageHeaderOf(aggregated).orElseThrow();
+    assertThat(header.getResponse().getCode()).isEqualTo(ResponseType.OK);
+    // 2 conditions from PDS-EXAMPLE (internal-0001) + 1 from PDS-EXAMPLE-B (internal-0002),
+    // both sites answered -> no timeout warning.
+    assertThat(resourcesOf(aggregated, Condition.class)).hasSize(3);
+    assertThat(resourcesOf(aggregated, OperationOutcome.class)).isEmpty();
   }
 
   @Test

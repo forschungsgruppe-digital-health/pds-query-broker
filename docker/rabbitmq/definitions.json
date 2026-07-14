@@ -79,6 +79,15 @@
       "durable": true,
       "auto_delete": false,
       "arguments": {}
+    },
+    {
+      "name": "req.PDS-EXAMPLE-B",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "pds.dlq"
+      }
     }
   ],
   "bindings": [
@@ -94,6 +103,14 @@
       "source": "pds.dlq",
       "vhost": "/",
       "destination": "pds.dlq",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "pds.broadcast",
+      "vhost": "/",
+      "destination": "req.PDS-EXAMPLE-B",
       "destination_type": "queue",
       "routing_key": "",
       "arguments": {}

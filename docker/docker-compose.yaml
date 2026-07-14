@@ -90,11 +90,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── PDS example connector (synthetic reference implementation) ──────────────
+  # ── PDS example connector A (synthetic reference implementation) ────────────
   pds-example:
     build:
       context: ..
       dockerfile: docker/pds-example/Dockerfile
+    image: qb-pds-example:local
     container_name: qb-pds-example
     ports:
       - "8082:8082"
@@ -108,6 +109,33 @@ services:
       PDS_CONNECTOR_GPAS_DOMAIN: https://ths.example.org/gpas/domain/PDS-EXAMPLE
     depends_on:
       rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8083' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── PDS example connector B (second synthetic site: fan-out demo) ───────────
+  pds-example-b:
+    image: qb-pds-example:local
+    container_name: qb-pds-example-b
+    ports:
+      - "8084:8082"
+      - "8085:8083"     # Management / Actuator
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-broker}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-broker}
+      PDS_CONNECTOR_PDS_ID: PDS-EXAMPLE-B
+      PDS_CONNECTOR_GPAS_DOMAIN: https://ths.example.org/gpas/domain/PDS-EXAMPLE-B
+      # Disjoint synthetic dataset for site B (map keys via JSON to survive env mangling).
+      SPRING_APPLICATION_JSON: '{"pds":{"connector":{"pseudonyms":{"PSN-B-0001":"internal-0002"}}}}'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      pds-example:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8083' || exit 1"]

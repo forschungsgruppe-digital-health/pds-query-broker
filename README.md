@@ -79,16 +79,19 @@ Example: an operation `GetConditions` retrieves diagnoses of a pseudonymized pat
 
 ```bash
 cd docker && cp .env.example .env
-docker compose up -d          # RabbitMQ, catalog server + seed, broker, example connector
+docker compose up -d          # RabbitMQ, catalog server + seed, broker, two example connectors
 ```
 
-Then send a federated query (synthetic pseudonym `PSN-EXAMPLE-0001`):
+Then send a federated query across both synthetic PDS sites (pseudonyms
+`PSN-EXAMPLE-0001` @ PDS-EXAMPLE and `PSN-B-0001` @ PDS-EXAMPLE-B):
 
 ```bash
 curl -s -X POST http://localhost:8080/fhir/\$process-message \
   -H "Content-Type: application/fhir+json" \
-  -d @docker/demo/get-conditions-request.json
+  -d @docker/demo/get-conditions-federated-request.json
 ```
+
+(`docker/demo/get-conditions-request.json` queries only site A.)
 
 For local development without containers (RabbitMQ + catalog still via compose):
 
