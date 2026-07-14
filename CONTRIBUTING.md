@@ -85,6 +85,22 @@ public class OmopConditionHandler implements OperationHandler {
 
 > If a profile is configured (e.g. MII KDS Diagnose), it typically requires specific CodeSystem bindings, mandatory fields, and extensions. The concrete requirements follow from the respective `targetProfile`.
 
+**Enabling validation (`targetProfile`):** the SDK enforces this via two hooks on `AbstractPrimaryDataSourceConnector`. Override `targetProfile(operation)` to name the profile each result resource must satisfy, and `profileValidator()` to supply a `ProfileValidator` (the SDK ships `CatalogProfileValidator`, backed by the `catalog/` mirror). When both are set, results are validated before sending; a violation yields a `fatal-error` response with the `validation-error` broker code — non-conformant data is never put on the wire. If a `targetProfile` is set but no validator is wired, the SDK logs a warning and sends unvalidated (fail-open). With no `targetProfile`, validation is skipped.
+
+```java
+@Override
+protected Optional<String> targetProfile(String operation) {
+    return "GetConditions".equals(operation)
+        ? Optional.of("https://.../StructureDefinition/MyConditionProfile")
+        : Optional.empty();
+}
+
+@Override
+protected ProfileValidator profileValidator() {
+    return new CatalogProfileValidator(FhirContext.forR4(), CatalogProfileValidator.defaultCatalogDir());
+}
+```
+
 ### Step 4: Register the handler
 
 ```java
