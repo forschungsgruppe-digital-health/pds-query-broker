@@ -8,6 +8,18 @@ From v0.2.0 onward, releases and changelog entries are generated automatically b
 Entries up to and including v0.2.0 were written manually following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.4.0...v0.5.0) (2026-07-14)
+
+
+### Features
+
+* **conformance:** catalog-driven conformance harness for PDS connectors (increment 2) ([#10](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/10)) ([167eafb](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/167eafbbfe0188c39fdf688d8194c903f4ef2705))
+
+
+### Build & Dependencies
+
+* **specs:** generate stubs with the official AsyncAPI Generator (Python + Java) ([#9](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/9)) ([b71625a](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/b71625af07a997d5b3788a359657a63a6698a7b9))
+
 ## [0.4.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.3.0...v0.4.0) (2026-07-14)
 
 
