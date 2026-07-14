@@ -42,3 +42,4 @@ tools/asyncapi-stub/__pycache__/
 tools/asyncapi-templates/*/node_modules/
 .venv-contract/
 .pytest_cache/
+tools/asyncapi-templates/*/__transpiled/
