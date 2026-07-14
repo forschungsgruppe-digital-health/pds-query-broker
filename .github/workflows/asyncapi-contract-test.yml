@@ -6,6 +6,7 @@ on:
     paths:
       - 'specs/**'
       - 'tools/asyncapi-stub/**'
+      - 'tools/asyncapi-templates/**'
       - 'broker/**'
       - 'connector-sdk/**'
       - 'docker/**'
@@ -16,6 +17,7 @@ on:
     paths:
       - 'specs/**'
       - 'tools/asyncapi-stub/**'
+      - 'tools/asyncapi-templates/**'
       - 'broker/**'
       - 'connector-sdk/**'
       - 'docker/**'
@@ -25,19 +27,51 @@ on:
 permissions:
   contents: read
 
+env:
+  # Pinned so stub generation is reproducible; bump deliberately.
+  ASYNCAPI_CLI_VERSION: 4.1.1
+
 jobs:
   contract-test:
-    name: Spec-generated Python connector vs live broker
+    name: Spec-generated stubs (Python + Java) vs live broker
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install test dependencies
+      - name: Install template dependencies
+        working-directory: tools/asyncapi-templates/qb-transport-stub
+        run: npm ci
+
+      - name: Generate stubs with the official AsyncAPI CLI
+        run: |
+          npx --yes "@asyncapi/cli@${ASYNCAPI_CLI_VERSION}" generate fromTemplate \
+            specs/pds-connector-base.yaml ./tools/asyncapi-templates/qb-transport-stub \
+            -o tools/asyncapi-stub/generated --force-write
+          ls -l tools/asyncapi-stub/generated/
+
+      - name: Java stub vs BrokerProtocol drift check
+        run: |
+          javac -d /tmp/qb-stubcheck \
+            connector-sdk/src/main/java/de/tudresden/fgdh/querybroker/sdk/BrokerProtocol.java \
+            tools/asyncapi-stub/generated/BrokerTransportSpec.java \
+            tools/asyncapi-stub/JavaStubCheck.java
+          java -cp /tmp/qb-stubcheck JavaStubCheck
+
+      - name: Install Python test dependencies
         run: pip install -r tools/asyncapi-stub/requirements.txt
 
       - name: Start broker stack (RabbitMQ, catalog + seed, broker)
@@ -46,7 +80,7 @@ jobs:
           cp .env.example .env
           docker compose up -d --wait broker
 
-      - name: Run contract test
+      - name: Run Python contract test
         run: pytest tools/asyncapi-stub/test_contract.py -v
 
       - name: Stack logs on failure

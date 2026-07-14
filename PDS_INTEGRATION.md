@@ -90,29 +90,24 @@ graph LR
 
 ## 3. Generating the stub
 
-The AsyncAPI base spec (`specs/pds-connector-base.yaml`) defines the AMQP topology and the content type (`application/fhir+json`). A language-specific stub is generated from this spec:
+The AsyncAPI base spec (`specs/pds-connector-base.yaml`) defines the AMQP topology and the content type (`application/fhir+json`). Transport stubs are generated with the official [AsyncAPI Generator](https://www.asyncapi.com/tools/generator) via `@asyncapi/cli` and the in-repo template:
 
 ```bash
-asyncapi generate fromTemplate specs/pds-connector-base.yaml \
-  @asyncapi/{template} \
-  -o ./connectors/pds-my-site
+(cd tools/asyncapi-templates/qb-transport-stub && npm ci)   # once
+npx --yes @asyncapi/cli@4.1.1 generate fromTemplate specs/pds-connector-base.yaml \
+  ./tools/asyncapi-templates/qb-transport-stub -o tools/asyncapi-stub/generated --force-write
 ```
 
-> Available templates: `java-spring`, `python-paho`, `nodejs`, `go-watermill`, among others. Alternatively, a template project in the desired language can be copied: `cp -r connectors/pds-example-{sprache} connectors/pds-my-site`
+> **Template compatibility note:** the official language templates (`@asyncapi/java-spring-template`, `@asyncapi/python-paho-template`, …) do not support AsyncAPI v3 documents yet ([java-spring-template#308](https://github.com/asyncapi/java-spring-template/issues/308), [python-paho-template#189](https://github.com/asyncapi/python-paho-template/issues/189)); the in-repo template targets the Generator's v3 parser API. It emits the machine-readable transport facts — `qb_stub.py` (Python) and `BrokerTransportSpec.java` (Java): channel addresses, exchange/queue bindings, content type, delivery modes.
 
-The generated stub contains the following modules:
+Two working starting points build on those stubs:
 
-| Module | Responsibility | Modify manually? |
-|-------|-------------------|-----------------|
-| `amqp_listener` | AMQP connection, queue binding | No |
-| `message_parser` | FHIR Message Bundle deserialization | No |
-| `pseudonym_filter` | Extracting the gPAS domain from Parameters | No |
-| `capability_check` | Checking handler registration | No |
-| `profile_validator` | `targetProfile` validation | No |
-| `provenance_builder` | Creating Provenance + AuditEvent | No |
-| `response_builder` | Assembling the FHIR Message Response | No |
-| `handlers/` | **This is where the PDS developer implements** | **Yes** |
-| `config.yaml.template` | Configuration template | Yes (copy + adapt) |
+| Starting point | Language | What it gives you |
+|----------------|----------|-------------------|
+| `tools/asyncapi-stub/test_contract.py` | Python | Executable reference connector (queue setup, self-filtering entry point, correlation, mock response building) — tested against the live broker in CI |
+| `connectors/pds-example/` + `connector-sdk` | Java | Full connector on the SDK: message parsing, pseudonym filtering, dispatch, response building (the responsibilities listed in §§ 5–7) |
+
+The remainder of this guide describes the responsibilities every connector must implement — parsing, self-filtering, handler dispatch, response assembly — independent of language.
 
 ---
 

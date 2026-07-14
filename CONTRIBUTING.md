@@ -21,10 +21,15 @@ cd .. && ./gradlew build   # unit + Testcontainers integration tests (needs a Do
 
 ### Step 1: Generate a stub
 
+Transport stubs are generated with the official [AsyncAPI Generator](https://www.asyncapi.com/tools/generator) via `@asyncapi/cli`, using the in-repo template (the official language templates do not support AsyncAPI v3 yet — see [java-spring-template#308](https://github.com/asyncapi/java-spring-template/issues/308), [python-paho-template#189](https://github.com/asyncapi/python-paho-template/issues/189)):
+
 ```bash
-asyncapi generate fromTemplate specs/pds-connector-base.yaml \
-  @asyncapi/java-spring-template -o ./connectors/pds-my-site
+(cd tools/asyncapi-templates/qb-transport-stub && npm ci)   # once
+npx --yes @asyncapi/cli@4.1.1 generate fromTemplate specs/pds-connector-base.yaml \
+  ./tools/asyncapi-templates/qb-transport-stub -o tools/asyncapi-stub/generated --force-write
 ```
+
+This emits `qb_stub.py` (Python) and `BrokerTransportSpec.java` (Java) with the spec's transport facts; `tools/asyncapi-stub/test_contract.py` is an executable reference connector built on the Python stub. Java projects preferring a full Spring scaffold can use `@asyncapi/java-spring-template` once it supports AsyncAPI v3, or start from `connectors/pds-example/` in this repo.
 
 ### Step 2: Configuration
 
