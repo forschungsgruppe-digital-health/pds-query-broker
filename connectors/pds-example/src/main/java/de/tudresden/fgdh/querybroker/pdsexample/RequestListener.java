@@ -50,7 +50,7 @@ public class RequestListener {
         .ifPresentOrElse(
             response -> {
               if (replyTo == null || replyTo.isBlank()) {
-                log.warn("{}: request without replyTo, dropping response", connector.getPdsId());
+                log.warn("{}: request without replyTo, dropping response", connector.getPrimaryDataSourceId());
                 return;
               }
               String json = fhirContext.newJsonParser().encodeResourceToString(response);
@@ -61,10 +61,10 @@ public class RequestListener {
                       .setDeliveryMode(MessageDeliveryMode.PERSISTENT)
                       .build();
               rabbitTemplate.send("", replyTo, out);
-              log.info("{}: responded to {} via {}", connector.getPdsId(), correlationId, replyTo);
+              log.info("{}: responded to {} via {}", connector.getPrimaryDataSourceId(), correlationId, replyTo);
             },
             () ->
                 log.debug(
-                    "{}: self-filtered request {} (silent)", connector.getPdsId(), correlationId));
+                    "{}: self-filtered request {} (silent)", connector.getPrimaryDataSourceId(), correlationId));
   }
 }

@@ -131,11 +131,11 @@ public class QueryBrokerService {
               IssueSeverity.FATAL,
               IssueType.TIMEOUT,
               ErrorCode.TIMEOUT,
-              "No addressed PDS responded within "
+              "No addressed primary data source responded within "
                   + properties.aggregatorTimeoutMs()
                   + " ms; the request produced no result."));
     } else if (!anyOk) {
-      // Every responding PDS failed — an ok would misrepresent the result.
+      // Every responding primary data source failed — an ok would misrepresent the result.
       code = ResponseType.FATALERROR;
     } else {
       code = ResponseType.OK;
@@ -148,7 +148,7 @@ public class QueryBrokerService {
                 (expected - responses.size())
                     + " of "
                     + expected
-                    + " addressed PDS did not respond within "
+                    + " addressed primary data sources did not respond within "
                     + properties.aggregatorTimeoutMs()
                     + " ms; the aggregated result is potentially incomplete."));
       }

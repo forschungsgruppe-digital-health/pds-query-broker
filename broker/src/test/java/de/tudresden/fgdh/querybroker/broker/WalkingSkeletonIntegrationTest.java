@@ -3,7 +3,7 @@ package de.tudresden.fgdh.querybroker.broker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ca.uhn.fhir.context.FhirContext;
-import de.tudresden.fgdh.querybroker.pdsexample.PdsExampleApplication;
+import de.tudresden.fgdh.querybroker.pdsexample.PrimaryDataSourceExampleApplication;
 import de.tudresden.fgdh.querybroker.sdk.BrokerMessages;
 import de.tudresden.fgdh.querybroker.sdk.BrokerProtocol;
 import java.net.URI;
@@ -79,7 +79,7 @@ class WalkingSkeletonIntegrationTest {
     // Both apps ship an application.yml; in a shared test JVM only one is on
     // the classpath first — so the connector's config is passed explicitly.
     connectorContext =
-        new SpringApplicationBuilder(PdsExampleApplication.class)
+        new SpringApplicationBuilder(PrimaryDataSourceExampleApplication.class)
             .run(
                 "--spring.main.web-application-type=none",
                 "--spring.rabbitmq.host=" + RABBIT.getHost(),
@@ -92,9 +92,9 @@ class WalkingSkeletonIntegrationTest {
                 "--pds.connector.pseudonyms.PSN-EXAMPLE-0001=internal-0001",
                 "--pds.connector.pseudonyms.PSN-EXAMPLE-0002=internal-0002");
 
-    // Second synthetic PDS site: own queue, own pseudonym domain, disjoint data.
+    // Second synthetic primary-data-source site: own queue, own pseudonym domain, disjoint data.
     connectorBContext =
-        new SpringApplicationBuilder(PdsExampleApplication.class)
+        new SpringApplicationBuilder(PrimaryDataSourceExampleApplication.class)
             .run(
                 "--spring.main.web-application-type=none",
                 "--spring.rabbitmq.host=" + RABBIT.getHost(),
@@ -136,7 +136,7 @@ class WalkingSkeletonIntegrationTest {
   }
 
   @Test
-  void federatedQueryAggregatesAcrossMultiplePdsSites() throws Exception {
+  void federatedQueryAggregatesAcrossMultiplePrimaryDataSourceSites() throws Exception {
     Bundle request =
         request(
             pseudonym("PSN-EXAMPLE-0001", EXAMPLE_DOMAIN), pseudonym("PSN-B-0001", EXAMPLE_B_DOMAIN));
@@ -216,7 +216,7 @@ class WalkingSkeletonIntegrationTest {
   }
 
   @Test
-  void returnsFatalErrorWhenNoPdsIsAddressed() throws Exception {
+  void returnsFatalErrorWhenNoPrimaryDataSourceIsAddressed() throws Exception {
     Bundle request = request(pseudonym("PSN-GHOST-1", UNKNOWN_DOMAIN));
 
     Bundle aggregated = postProcessMessage(request, 200);

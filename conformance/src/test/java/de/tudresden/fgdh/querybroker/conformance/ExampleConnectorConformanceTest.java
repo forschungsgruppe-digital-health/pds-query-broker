@@ -1,9 +1,9 @@
 package de.tudresden.fgdh.querybroker.conformance;
 
-import de.tudresden.fgdh.querybroker.sdk.AbstractPdsConnector;
+import de.tudresden.fgdh.querybroker.sdk.AbstractPrimaryDataSourceConnector;
 import de.tudresden.fgdh.querybroker.sdk.OperationHandler;
-import de.tudresden.fgdh.querybroker.sdk.StaticMapThsClient;
-import de.tudresden.fgdh.querybroker.sdk.ThsClient;
+import de.tudresden.fgdh.querybroker.sdk.StaticMapTrustedThirdPartyClient;
+import de.tudresden.fgdh.querybroker.sdk.TrustedThirdPartyClient;
 import java.util.Map;
 import java.util.UUID;
 import org.hl7.fhir.r4.model.Bundle;
@@ -13,24 +13,24 @@ import org.hl7.fhir.r4.model.Condition;
 
 /**
  * The reference connector's own conformance run — also the living example of
- * how a PDS team wires {@link PdsConnectorConformanceTest} to its connector
+ * how a primary-data-source (PDS) team wires {@link PrimaryDataSourceConnectorConformanceTest} to its connector
  * (CONTRIBUTING § 3). Uses a self-contained synthetic connector equivalent to
  * connectors/pds-example so the harness stays free of Spring dependencies.
  */
-class ExampleConnectorConformanceTest extends PdsConnectorConformanceTest {
+class ExampleConnectorConformanceTest extends PrimaryDataSourceConnectorConformanceTest {
 
   private static final String DOMAIN = "https://ths.example.org/gpas/domain/PDS-CONFORMANCE";
 
-  private final AbstractPdsConnector connector =
-      new AbstractPdsConnector() {
-        private final ThsClient ths =
-            new StaticMapThsClient(
+  private final AbstractPrimaryDataSourceConnector connector =
+      new AbstractPrimaryDataSourceConnector() {
+        private final TrustedThirdPartyClient trustedThirdParty =
+            new StaticMapTrustedThirdPartyClient(
                 Map.of(
                     "PSN-CONF-0001", "internal-0001",
                     "PSN-CONF-EMPTY", "internal-nodata"));
 
         @Override
-        public String getPdsId() {
+        public String getPrimaryDataSourceId() {
           return "PDS-CONFORMANCE";
         }
 
@@ -64,13 +64,13 @@ class ExampleConnectorConformanceTest extends PdsConnectorConformanceTest {
         }
 
         @Override
-        protected ThsClient thsClient() {
-          return ths;
+        protected TrustedThirdPartyClient trustedThirdPartyClient() {
+          return trustedThirdParty;
         }
       };
 
   @Override
-  protected AbstractPdsConnector connector() {
+  protected AbstractPrimaryDataSourceConnector connector() {
     return connector;
   }
 

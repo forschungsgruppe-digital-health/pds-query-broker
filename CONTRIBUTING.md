@@ -64,7 +64,7 @@ ths:
 public class OmopConditionHandler implements OperationHandler {
 
     private final OmopCdmClient omop;
-    private final LocalThsClient localThs;
+    private final LocalTrustedThirdPartyClient localThs;
     private final ConditionFhirMapper mapper;
 
     @Override
@@ -89,10 +89,10 @@ public class OmopConditionHandler implements OperationHandler {
 
 ```java
 @Component
-public class MySiteConnector extends AbstractPdsConnector {
+public class MySiteConnector extends AbstractPrimaryDataSourceConnector {
 
     @Override
-    public String getPdsId() { return "PDS-MY-SITE"; }
+    public String getPrimaryDataSourceId() { return "PDS-MY-SITE"; }
 
     @Override
     public Map<String, OperationHandler> getHandlers() {
@@ -128,11 +128,11 @@ The `conformance` Gradle module pins the protocol behavior of ANY connector agai
 ./gradlew :conformance:test
 ```
 
-To put your own connector under the harness, extend `PdsConnectorConformanceTest` and provide the connector plus synthetic pseudonyms (see `ExampleConnectorConformanceTest` for the living example):
+To put your own connector under the harness, extend `PrimaryDataSourceConnectorConformanceTest` and provide the connector plus synthetic pseudonyms (see `ExampleConnectorConformanceTest` for the living example):
 
 ```java
-class MySiteConformanceTest extends PdsConnectorConformanceTest {
-  @Override protected AbstractPdsConnector connector() { return mySiteConnector; }
+class MySiteConformanceTest extends PrimaryDataSourceConnectorConformanceTest {
+  @Override protected AbstractPrimaryDataSourceConnector connector() { return mySiteConnector; }
   @Override protected String knownPseudonym() { return "PSN-SYNTH-0001"; }
   @Override protected String emptyResultPseudonym() { return "PSN-SYNTH-EMPTY"; }
   @Override protected String unresolvablePseudonym() { return "PSN-SYNTH-UNKNOWN"; }
@@ -268,7 +268,7 @@ public Map<String, OperationHandler> getHandlers() {
 
 | Class | Responsibility |
 |-------|----------------|
-| `AbstractPdsConnector` | FHIR message parsing, pseudonym filtering, dispatch, profile validation |
+| `AbstractPrimaryDataSourceConnector` | FHIR message parsing, pseudonym filtering, dispatch, profile validation |
 | `OperationHandler` | `Bundle execute(String pseudonym, Parameters params)` |
 | `FhirProfileValidator` | Validation against configured StructureDefinitions + GraphDefinition |
 | `CapabilityStatementGenerator` | Generates a CapabilityStatement from the handler map |

@@ -1,29 +1,30 @@
 package de.tudresden.fgdh.querybroker.pdsexample;
 
-import de.tudresden.fgdh.querybroker.sdk.AbstractPdsConnector;
+import de.tudresden.fgdh.querybroker.sdk.AbstractPrimaryDataSourceConnector;
 import de.tudresden.fgdh.querybroker.sdk.OperationHandler;
-import de.tudresden.fgdh.querybroker.sdk.StaticMapThsClient;
-import de.tudresden.fgdh.querybroker.sdk.ThsClient;
+import de.tudresden.fgdh.querybroker.sdk.StaticMapTrustedThirdPartyClient;
+import de.tudresden.fgdh.querybroker.sdk.TrustedThirdPartyClient;
 import java.util.Map;
 import org.hl7.fhir.r4.model.Bundle;
 import org.springframework.stereotype.Component;
 
 /** Reference connector: serves GetConditions from the synthetic store. */
 @Component
-public class ExampleConnector extends AbstractPdsConnector {
+public class ExampleConnector extends AbstractPrimaryDataSourceConnector {
 
   private final ConnectorProperties properties;
-  private final ThsClient thsClient;
+  private final TrustedThirdPartyClient trustedThirdPartyClient;
   private final SyntheticConditionStore store;
 
   public ExampleConnector(ConnectorProperties properties, SyntheticConditionStore store) {
     this.properties = properties;
-    this.thsClient = new StaticMapThsClient(properties.pseudonyms());
+    this.trustedThirdPartyClient = new StaticMapTrustedThirdPartyClient(properties.pseudonyms());
     this.store = store;
   }
 
   @Override
-  public String getPdsId() {
+  public String getPrimaryDataSourceId() {
+    // properties.pdsId() mirrors the config key pds.connector.pds-id (kept).
     return properties.pdsId();
   }
 
@@ -38,8 +39,8 @@ public class ExampleConnector extends AbstractPdsConnector {
   }
 
   @Override
-  protected ThsClient thsClient() {
-    return thsClient;
+  protected TrustedThirdPartyClient trustedThirdPartyClient() {
+    return trustedThirdPartyClient;
   }
 
   private OperationHandler getConditionsHandler() {
