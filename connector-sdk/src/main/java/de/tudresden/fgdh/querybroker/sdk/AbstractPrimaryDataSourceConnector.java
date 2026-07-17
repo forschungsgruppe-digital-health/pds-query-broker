@@ -1,6 +1,7 @@
 package de.tudresden.fgdh.querybroker.sdk;
 
 import de.tudresden.fgdh.querybroker.sdk.BrokerProtocol.ErrorCode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,6 +45,26 @@ public abstract class AbstractPrimaryDataSourceConnector {
 
   /** The site-local trusted-third-party client used to resolve pseudonyms. */
   protected abstract TrustedThirdPartyClient trustedThirdPartyClient();
+
+  /**
+   * The canonical URL of the FHIR profile every result resource of
+   * {@code operation} must conform to before the response is sent. An empty
+   * result disables validation for that operation (the documented default:
+   * "without a {@code targetProfile}, validation is skipped").
+   */
+  protected Optional<String> targetProfile(String operation) {
+    return Optional.empty();
+  }
+
+  /**
+   * The validator that enforces {@link #targetProfile(String)}. Returns
+   * {@code null} when no validator is wired — a configured targetProfile is
+   * then logged and NOT enforced (fail-open), so a connector cannot silently
+   * believe it is validating.
+   */
+  protected ProfileValidator profileValidator() {
+    return null;
+  }
 
   /** AMQP endpoint reported as MessageHeader.source in responses. */
   protected String sourceEndpoint() {
@@ -91,6 +112,13 @@ public abstract class AbstractPrimaryDataSourceConnector {
       Bundle result = handler.execute(internalId, parameters);
       List<Resource> payload =
           result.getEntry().stream().map(Bundle.BundleEntryComponent::getResource).toList();
+
+      Optional<Bundle> validationFailure =
+          validateAgainstTargetProfile(requestHeader, operation, payload);
+      if (validationFailure.isPresent()) {
+        return validationFailure;
+      }
+
       return Optional.of(
           BrokerMessages.responseBundle(
               requestHeader,
@@ -113,6 +141,56 @@ public abstract class AbstractPrimaryDataSourceConnector {
                       ErrorCode.PDS_ERROR,
                       getPrimaryDataSourceId() + ": " + e.getMessage()))));
     }
+  }
+
+  /**
+   * Validates every result resource against the operation's {@code targetProfile}
+   * before sending. Returns a fatal-error response (never invalid data on the
+   * wire) when validation fails, or empty when it passes / is not configured.
+   */
+  private Optional<Bundle> validateAgainstTargetProfile(
+      MessageHeader requestHeader, String operation, List<Resource> payload) {
+    Optional<String> profile = targetProfile(operation);
+    if (profile.isEmpty()) {
+      return Optional.empty();
+    }
+    ProfileValidator validator = profileValidator();
+    if (validator == null) {
+      log.warn(
+          "{}: targetProfile {} configured for {} but no ProfileValidator wired — sending unvalidated",
+          getPrimaryDataSourceId(), profile.get(), operation);
+      return Optional.empty();
+    }
+
+    List<String> violations = new ArrayList<>();
+    for (Resource resource : payload) {
+      violations.addAll(validator.validate(resource, profile.get()));
+    }
+    if (violations.isEmpty()) {
+      return Optional.empty();
+    }
+
+    log.warn(
+        "{}: {} result resource(s) failed validation against {}: {}",
+        getPrimaryDataSourceId(), payload.size(), profile.get(), violations);
+    return Optional.of(
+        BrokerMessages.responseBundle(
+            requestHeader,
+            getPrimaryDataSourceId() + " Connector",
+            sourceEndpoint(),
+            ResponseType.FATALERROR,
+            List.of(
+                BrokerMessages.operationOutcome(
+                    IssueSeverity.ERROR,
+                    IssueType.INVALID,
+                    ErrorCode.VALIDATION_ERROR,
+                    getPrimaryDataSourceId()
+                        + ": result did not conform to "
+                        + profile.get()
+                        + " ("
+                        + violations.size()
+                        + " issue(s)); first: "
+                        + violations.get(0)))));
   }
 
   /** PascalCase operation code = last path segment of the eventUri canonical. */
