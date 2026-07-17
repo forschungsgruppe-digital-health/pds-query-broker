@@ -5,6 +5,7 @@ import ca.uhn.fhir.validation.FhirValidator;
 import ca.uhn.fhir.validation.ValidationOptions;
 import ca.uhn.fhir.validation.ValidationResult;
 import de.tudresden.fgdh.querybroker.sdk.CatalogProfileValidator;
+import de.tudresden.fgdh.querybroker.sdk.TerminologyServerConfig;
 import java.nio.file.Path;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 
@@ -31,7 +32,12 @@ public final class CatalogValidator {
 
   public CatalogValidator(FhirContext fhirContext, Path catalogDir) {
     this.fhirContext = fhirContext;
-    this.validator = CatalogProfileValidator.newCatalogBackedValidator(fhirContext, catalogDir);
+    // Terminology validation is opt-in via TERMINOLOGY_SERVER_URL (+ mTLS
+    // variables) — see TerminologyServerConfig.fromEnvironment (ADR-013).
+    // Unset (the CI default): structural validation only, as before.
+    this.validator =
+        CatalogProfileValidator.newCatalogBackedValidator(
+            fhirContext, catalogDir, TerminologyServerConfig.fromEnvironment().orElse(null));
   }
 
   /** Locates the catalog/ mirror from a Gradle module working directory. */

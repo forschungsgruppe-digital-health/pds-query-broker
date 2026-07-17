@@ -24,6 +24,15 @@ pds:
     # target-profiles:
     #   GetConditions: https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose
     # validation-catalog-dir: /app/catalog
+    # Remote terminology server (ADR-013) — activates terminology/binding
+    # checks. Generic: SU-TermServ (mTLS, from its onboarding) or any
+    # FHIR terminology server such as Ontoserver. Never commit certificates.
+    # terminology:
+    #   server-url: https://<su-termserv-host>/fhir
+    #   client-keystore: /app/certs/su-termserv-client.p12
+    #   client-keystore-password: ${TERMINOLOGY_KEYSTORE_PASSWORD}
+    #   truststore: /app/certs/su-termserv-truststore.p12
+    #   truststore-password: ${TERMINOLOGY_TRUSTSTORE_PASSWORD}
 
 server:
   port: 8082

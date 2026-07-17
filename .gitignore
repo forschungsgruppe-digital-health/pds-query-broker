@@ -45,3 +45,9 @@ tools/asyncapi-templates/*/node_modules/
 .venv-contract/
 .pytest_cache/
 tools/asyncapi-templates/*/__transpiled/
+
+# Never commit certificates/keys (terminology-server mTLS etc.)
+*.p12
+*.pfx
+*.jks
+certs/

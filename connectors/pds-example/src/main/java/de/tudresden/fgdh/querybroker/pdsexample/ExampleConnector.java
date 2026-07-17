@@ -6,6 +6,7 @@ import de.tudresden.fgdh.querybroker.sdk.CatalogProfileValidator;
 import de.tudresden.fgdh.querybroker.sdk.OperationHandler;
 import de.tudresden.fgdh.querybroker.sdk.ProfileValidator;
 import de.tudresden.fgdh.querybroker.sdk.StaticMapTrustedThirdPartyClient;
+import de.tudresden.fgdh.querybroker.sdk.TerminologyServerConfig;
 import de.tudresden.fgdh.querybroker.sdk.TrustedThirdPartyClient;
 import java.nio.file.Path;
 import java.util.Map;
@@ -30,7 +31,28 @@ public class ExampleConnector extends AbstractPrimaryDataSourceConnector {
         properties.validationCatalogDir() == null || properties.validationCatalogDir().isBlank()
             ? null
             : new CatalogProfileValidator(
-                FhirContext.forR4(), Path.of(properties.validationCatalogDir()));
+                FhirContext.forR4(),
+                Path.of(properties.validationCatalogDir()),
+                terminologyServerConfig(properties));
+  }
+
+  private static TerminologyServerConfig terminologyServerConfig(ConnectorProperties properties) {
+    ConnectorProperties.TerminologyProperties terminology = properties.terminology();
+    if (terminology == null
+        || terminology.serverUrl() == null
+        || terminology.serverUrl().isBlank()) {
+      return null;
+    }
+    return new TerminologyServerConfig(
+        terminology.serverUrl(),
+        terminology.clientKeystore() == null || terminology.clientKeystore().isBlank()
+            ? null
+            : Path.of(terminology.clientKeystore()),
+        terminology.clientKeystorePassword(),
+        terminology.truststore() == null || terminology.truststore().isBlank()
+            ? null
+            : Path.of(terminology.truststore()),
+        terminology.truststorePassword());
   }
 
   @Override
