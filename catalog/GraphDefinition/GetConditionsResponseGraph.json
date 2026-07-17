@@ -10,7 +10,8 @@
       "path": "Bundle.entry.resource",
       "target": [
         {
-          "type": "Condition"
+          "type": "Condition",
+          "profile": "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
         }
       ]
     }

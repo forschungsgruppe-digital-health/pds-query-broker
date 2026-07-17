@@ -7,7 +7,7 @@ Usage: #definition
 * status = #active
 * kind = #operation
 * code = #GetConditions
-* description = "Exemplary operation: retrieves diagnoses. targetProfile is optional."
+* description = "Exemplary operation: retrieves diagnoses. For the pilot, the output is bound to the MII KDS Diagnose profile via targetProfile (ADR-012); the binding mechanism itself remains optional and project-specific."
 * resource = #Condition
 * system = false
 * type = true
@@ -37,6 +37,7 @@ Usage: #definition
 * parameter[=].part[=].min = 0
 * parameter[=].part[=].max = "*"
 * parameter[=].part[=].type = #Condition
+* parameter[=].part[=].targetProfile = "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
 
 
 Instance: GetConditionsRequest
@@ -69,6 +70,7 @@ Usage: #definition
 * eventUri = "https://querybroker.example.org/fhir/OperationDefinition/GetConditions"
 * category = #consequence
 * focus[+].code = #Condition
+* focus[=].profile = "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
 * focus[=].min = 0
 * focus[=].max = "*"
 
@@ -82,3 +84,4 @@ Usage: #definition
 * start = #Bundle
 * link[+].path = "Bundle.entry.resource"
 * link[=].target[+].type = #Condition
+* link[=].target[=].profile = "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"

@@ -19,10 +19,9 @@ publisher:
   name: Query Broker Project
   url: https://querybroker.example.org
 
-dependencies: {}
-  # Project-specific profiles as a dependency, e.g.:
-  # de.medizininformatikinitiative.kerndatensatz.diagnose: 2025.0.1
-  # hl7.fhir.us.core: 6.1.0
+# Project-specific content profiles (ADR-012: MII KDS first).
+dependencies:
+  de.medizininformatikinitiative.kerndatensatz.diagnose: 2025.0.1
 
 pages:
   index.md:

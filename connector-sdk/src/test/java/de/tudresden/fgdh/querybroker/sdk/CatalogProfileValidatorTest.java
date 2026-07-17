@@ -56,4 +56,44 @@ class CatalogProfileValidatorTest {
 
     assertThat(violations).as("missing issue.details must fail").isNotEmpty();
   }
+
+  // --- vendored external package: MII KDS Diagnose (ADR-012, catalog/packages) ---
+
+  private static final String KDS_DIAGNOSE =
+      "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose";
+
+  @Test
+  void acceptsAKdsDiagnoseConformantCondition() {
+    org.hl7.fhir.r4.model.Condition condition = new org.hl7.fhir.r4.model.Condition();
+    condition
+        .getCode()
+        .addCoding(
+            new org.hl7.fhir.r4.model.Coding(
+                    "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
+                    "C34.1",
+                    "Synthetic neoplasm (obviously artificial)")
+                .setVersion("2026"));
+    condition.getSubject().setDisplay("Synthetic Testpatient (pseudonymized)");
+    condition.setRecordedDateElement(new org.hl7.fhir.r4.model.DateTimeType("2026-01-15"));
+
+    List<String> violations = validator.validate(condition, KDS_DIAGNOSE);
+
+    assertThat(violations).as("KDS-conformant condition, got: %s", violations).isEmpty();
+  }
+
+  @Test
+  void rejectsAConditionMissingKdsMandatoryElements() {
+    // Missing recordedDate (1..1) and icd10-gm coding.version (1..1 in the slice).
+    org.hl7.fhir.r4.model.Condition invalid = new org.hl7.fhir.r4.model.Condition();
+    invalid
+        .getCode()
+        .addCoding(
+            new org.hl7.fhir.r4.model.Coding(
+                "http://fhir.de/CodeSystem/bfarm/icd-10-gm", "C34.1", "no version, no recordedDate"));
+    invalid.getSubject().setDisplay("Synthetic Testpatient (pseudonymized)");
+
+    List<String> violations = validator.validate(invalid, KDS_DIAGNOSE);
+
+    assertThat(violations).as("missing recordedDate/coding.version must fail").isNotEmpty();
+  }
 }

@@ -33,9 +33,13 @@ public class SyntheticConditionStore {
   private static Condition condition(String icdCode, String display) {
     Condition condition = new Condition();
     condition.setId(UUID.randomUUID().toString());
+    // Shaped to conform to the MII KDS Diagnose profile (ADR-012): the
+    // icd10-gm coding slice requires system + version + code, and the profile
+    // requires subject and recordedDate.
     condition.setCode(
-        new CodeableConcept().addCoding(new Coding(ICD10GM, icdCode, display)));
+        new CodeableConcept().addCoding(new Coding(ICD10GM, icdCode, display).setVersion("2026")));
     condition.getSubject().setDisplay("Synthetic Testpatient (pseudonymized)");
+    condition.setRecordedDateElement(new org.hl7.fhir.r4.model.DateTimeType("2026-01-15"));
     return condition;
   }
 }

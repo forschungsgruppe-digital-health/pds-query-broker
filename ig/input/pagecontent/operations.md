@@ -8,6 +8,10 @@ This IG contains an exemplary operation (`GetConditions`) as a template for proj
 
 In addition to its operation-specific response, every request MessageDefinition lists the generic [OperationError](MessageDefinition-OperationError.html) MessageDefinition in `allowedResponse`. It is sent when a request fails as a whole (event URI `https://querybroker.example.org/fhir/event/operation-error`, `response.code = fatal-error`) and carries one or more `BrokerOperationOutcome` resources with machine-readable error codes. Partial failures of an otherwise successful aggregation travel as additional `OperationOutcome` entries inside the regular response message instead.
 
+### Pilot profile binding (ADR-012)
+
+For the pilot, `GetConditions` is bound to the [MII KDS Diagnose](https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose) Condition profile on all three binding points of the triple (`targetProfile`, `focus.profile`, `target.profile`). The binding *mechanism* remains optional and project-specific.
+
 ### Defining project-specific operations
 
 New operations are created as FHIR resources in the message catalog — not as code changes to the broker or to existing connectors. The profile binding via `targetProfile`, `focus.profile`, and `target.profile` is optional: operations without a profile binding return base FHIR resources.
