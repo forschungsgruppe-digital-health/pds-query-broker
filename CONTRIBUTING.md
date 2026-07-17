@@ -103,6 +103,13 @@ protected ProfileValidator profileValidator() {
 
 **Terminology server (optional, ADR-013):** terminology/binding validation (code systems like ICD-10-GM) activates only when a remote FHIR terminology server is configured — for the pilot the **MII SU-TermServ** (requires an approved application and an mTLS client certificate from its onboarding); any other FHIR terminology server (e.g. a CSIRO Ontoserver) works identically. Configure via `pds.connector.terminology.*` (server-url, client-keystore, client-keystore-password, truststore, truststore-password) or, for the conformance harness, the `TERMINOLOGY_SERVER_URL`/`TERMINOLOGY_CLIENT_KEYSTORE`/… environment variables. Never commit certificates or keys — they are deployment-supplied. Without a server, validation stays structural-only (ADR-012).
 
+**Providing the mTLS certificate securely (never via git):**
+
+1. **Local development:** put the issued `.p12` files into a `certs/` directory in the repo root — it is gitignored (as are `*.p12`/`*.pfx`/`*.jks` globally), so they can never be committed; point `pds.connector.terminology.client-keystore` at `certs/<name>.p12`.
+2. **Compose/deployment:** keep the files OUTSIDE the repo (e.g. `/srv/qb/certs` on the host), bind-mount them read-only into the container (`- /srv/qb/certs:/app/certs:ro`), and reference `/app/certs/<name>.p12` in the config. Alternatively use Docker/Compose `secrets:` (file-based secrets mounted under `/run/secrets/`).
+3. **Passwords:** never in YAML — inject via environment (`${TERMINOLOGY_KEYSTORE_PASSWORD}`) from the gitignored `docker/.env` (placeholders live in `.env.example`) or a secret store.
+4. **Hygiene:** if a certificate ever lands in git history, treat it as compromised — revoke/reissue via the SU-TermServ onboarding and rewrite history; a gitleaks pre-commit hook is recommended for this repo (as used elsewhere in the org).
+
 ### Step 4: Register the handler
 
 ```java
