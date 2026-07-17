@@ -19,6 +19,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *     {@code packages/*.tgz}) that backs the profile validator; unset =
  *     no validator wired (a configured targetProfile then logs a warning
  *     and sends unvalidated)
+ * @param terminology optional remote FHIR terminology server (ADR-013);
+ *     unset = terminology/binding checks stay disabled (structural
+ *     validation only)
  */
 @ConfigurationProperties(prefix = "pds.connector")
 public record ConnectorProperties(
@@ -26,10 +29,24 @@ public record ConnectorProperties(
     String gpasDomain,
     Map<String, String> pseudonyms,
     Map<String, String> targetProfiles,
-    String validationCatalogDir) {
+    String validationCatalogDir,
+    TerminologyProperties terminology) {
 
   public ConnectorProperties {
     pseudonyms = pseudonyms == null ? Map.of() : Map.copyOf(pseudonyms);
     targetProfiles = targetProfiles == null ? Map.of() : Map.copyOf(targetProfiles);
   }
+
+  /**
+   * Generic terminology-server settings — works for the MII SU-TermServ (mTLS
+   * client certificate from the onboarding) as well as any other FHIR
+   * terminology server such as a CSIRO Ontoserver (leave the keystore fields
+   * unset when the server does not use mutual TLS).
+   */
+  public record TerminologyProperties(
+      String serverUrl,
+      String clientKeystore,
+      String clientKeystorePassword,
+      String truststore,
+      String truststorePassword) {}
 }

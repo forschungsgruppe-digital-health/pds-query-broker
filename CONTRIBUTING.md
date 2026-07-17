@@ -101,6 +101,8 @@ protected ProfileValidator profileValidator() {
 }
 ```
 
+**Terminology server (optional, ADR-013):** terminology/binding validation (code systems like ICD-10-GM) activates only when a remote FHIR terminology server is configured — for the pilot the **MII SU-TermServ** (requires an approved application and an mTLS client certificate from its onboarding); any other FHIR terminology server (e.g. a CSIRO Ontoserver) works identically. Configure via `pds.connector.terminology.*` (server-url, client-keystore, client-keystore-password, truststore, truststore-password) or, for the conformance harness, the `TERMINOLOGY_SERVER_URL`/`TERMINOLOGY_CLIENT_KEYSTORE`/… environment variables. Never commit certificates or keys — they are deployment-supplied. Without a server, validation stays structural-only (ADR-012).
+
 ### Step 4: Register the handler
 
 ```java

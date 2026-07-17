@@ -17,9 +17,10 @@ builds; the pinned versions must match `ig/sushi-config.yaml`.
 | `de.basisprofil.r4` | 1.5.4 | German base profiles (KDS parent profiles) |
 
 Not vendored: the national terminology packages (e.g. `kbv.all.st`, which
-carries ICD-10-GM) — too large, and the pilot validates structure/cardinality/
-slicing/invariants only. Terminology binding validation returns with a
-terminology-server integration (see ADR-012 and `CatalogProfileValidator`).
+carries ICD-10-GM) — too large. Without a terminology server the validators
+check structure/cardinality/slicing/invariants only (ADR-012); with a remote
+FHIR terminology server configured (SU-TermServ or any Ontoserver-class
+server, ADR-013), terminology/binding validation is active as well.
 
 Update procedure: bump the version in `ig/sushi-config.yaml`, replace the
 `.tgz` here (download from `https://packages.simplifier.net/<name>/<version>`),

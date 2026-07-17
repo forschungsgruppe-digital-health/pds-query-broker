@@ -14,6 +14,8 @@ dependencies {
     implementation("ca.uhn.hapi.fhir:hapi-fhir-validation:$hapiFhirVersion")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-validation-resources-r4:$hapiFhirVersion")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-caching-caffeine:$hapiFhirVersion")
+    // Remote terminology server client (ADR-013)
+    implementation("ca.uhn.hapi.fhir:hapi-fhir-client:$hapiFhirVersion")
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
