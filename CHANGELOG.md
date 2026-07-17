@@ -8,6 +8,20 @@ From v0.2.0 onward, releases and changelog entries are generated automatically b
 Entries up to and including v0.2.0 were written manually following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.5.0...v0.6.0) (2026-07-17)
+
+
+### Features
+
+* **catalog:** MII KDS content-profile strategy — research report, ADR-012, KDS Diagnose binding (S1) ([#14](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/14)) ([f77e774](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/f77e774209a1922abf078ed2f664980f91ae6409))
+* **sdk:** enforce targetProfile validation of handler output before sending ([#13](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/13)) ([1ad35ca](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/1ad35ca18f7f94ac410a909dee79c31e06a134dc))
+* **sdk:** generic FHIR terminology-server integration — SU-TermServ for the pilot (ADR-013) ([#15](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/15)) ([4c0689f](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/4c0689f5b3e483978327c3f5acd983812c5e32f5))
+
+
+### Refactoring
+
+* expand PDS/THS abbreviations in source identifiers and docs ([#12](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/12)) ([d7244b2](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/d7244b23a416aa92f1320ecad252e5bcb9a1f13d))
+
 ## [0.5.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.4.0...v0.5.0) (2026-07-14)
 
 
