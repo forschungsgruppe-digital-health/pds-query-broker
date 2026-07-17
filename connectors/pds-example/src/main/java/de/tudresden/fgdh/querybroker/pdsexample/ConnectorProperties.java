@@ -12,11 +12,24 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param gpasDomain the gPAS pseudonymization domain used for self-filtering
  * @param pseudonyms static pseudonym -&gt; internal-id map (increment-1 stand-in
  *     for a trusted third party)
+ * @param targetProfiles operation code -&gt; canonical profile URL every result
+ *     resource must conform to before sending (ADR-012); empty = validation
+ *     skipped (the documented default)
+ * @param validationCatalogDir directory holding the catalog mirror (+
+ *     {@code packages/*.tgz}) that backs the profile validator; unset =
+ *     no validator wired (a configured targetProfile then logs a warning
+ *     and sends unvalidated)
  */
 @ConfigurationProperties(prefix = "pds.connector")
-public record ConnectorProperties(String pdsId, String gpasDomain, Map<String, String> pseudonyms) {
+public record ConnectorProperties(
+    String pdsId,
+    String gpasDomain,
+    Map<String, String> pseudonyms,
+    Map<String, String> targetProfiles,
+    String validationCatalogDir) {
 
   public ConnectorProperties {
     pseudonyms = pseudonyms == null ? Map.of() : Map.copyOf(pseudonyms);
+    targetProfiles = targetProfiles == null ? Map.of() : Map.copyOf(targetProfiles);
   }
 }

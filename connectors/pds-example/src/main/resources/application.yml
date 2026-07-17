@@ -18,6 +18,12 @@ pds:
     pseudonyms:
       PSN-EXAMPLE-0001: internal-0001
       PSN-EXAMPLE-0002: internal-0002
+    # Runtime targetProfile validation (ADR-012) — off by default. To enable,
+    # bind operations to canonical profile URLs and point the validator at the
+    # catalog mirror (with packages/*.tgz), e.g.:
+    # target-profiles:
+    #   GetConditions: https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose
+    # validation-catalog-dir: /app/catalog
 
 server:
   port: 8082

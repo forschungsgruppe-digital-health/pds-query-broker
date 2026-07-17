@@ -1,10 +1,15 @@
 package de.tudresden.fgdh.querybroker.pdsexample;
 
+import ca.uhn.fhir.context.FhirContext;
 import de.tudresden.fgdh.querybroker.sdk.AbstractPrimaryDataSourceConnector;
+import de.tudresden.fgdh.querybroker.sdk.CatalogProfileValidator;
 import de.tudresden.fgdh.querybroker.sdk.OperationHandler;
+import de.tudresden.fgdh.querybroker.sdk.ProfileValidator;
 import de.tudresden.fgdh.querybroker.sdk.StaticMapTrustedThirdPartyClient;
 import de.tudresden.fgdh.querybroker.sdk.TrustedThirdPartyClient;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 import org.hl7.fhir.r4.model.Bundle;
 import org.springframework.stereotype.Component;
 
@@ -15,11 +20,17 @@ public class ExampleConnector extends AbstractPrimaryDataSourceConnector {
   private final ConnectorProperties properties;
   private final TrustedThirdPartyClient trustedThirdPartyClient;
   private final SyntheticConditionStore store;
+  private final ProfileValidator profileValidator;
 
   public ExampleConnector(ConnectorProperties properties, SyntheticConditionStore store) {
     this.properties = properties;
     this.trustedThirdPartyClient = new StaticMapTrustedThirdPartyClient(properties.pseudonyms());
     this.store = store;
+    this.profileValidator =
+        properties.validationCatalogDir() == null || properties.validationCatalogDir().isBlank()
+            ? null
+            : new CatalogProfileValidator(
+                FhirContext.forR4(), Path.of(properties.validationCatalogDir()));
   }
 
   @Override
@@ -41,6 +52,16 @@ public class ExampleConnector extends AbstractPrimaryDataSourceConnector {
   @Override
   protected TrustedThirdPartyClient trustedThirdPartyClient() {
     return trustedThirdPartyClient;
+  }
+
+  @Override
+  protected Optional<String> targetProfile(String operation) {
+    return Optional.ofNullable(properties.targetProfiles().get(operation));
+  }
+
+  @Override
+  protected ProfileValidator profileValidator() {
+    return profileValidator;
   }
 
   private OperationHandler getConditionsHandler() {

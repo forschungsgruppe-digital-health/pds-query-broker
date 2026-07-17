@@ -7,7 +7,7 @@
   "status": "active",
   "kind": "operation",
   "code": "GetConditions",
-  "description": "Exemplary operation: retrieves diagnoses. targetProfile is optional.",
+  "description": "Exemplary operation: retrieves diagnoses. For the pilot, the output is bound to the MII KDS Diagnose profile via targetProfile (ADR-012); the binding mechanism itself remains optional and project-specific.",
   "resource": [
     "Condition"
   ],
@@ -48,7 +48,10 @@
           "use": "out",
           "min": 0,
           "max": "*",
-          "type": "Condition"
+          "type": "Condition",
+          "targetProfile": [
+            "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose"
+          ]
         }
       ]
     }

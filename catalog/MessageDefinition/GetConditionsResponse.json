@@ -11,6 +11,7 @@
   "focus": [
     {
       "code": "Condition",
+      "profile": "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose",
       "min": 0,
       "max": "*"
     }
