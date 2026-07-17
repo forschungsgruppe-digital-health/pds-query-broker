@@ -14,7 +14,7 @@ import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.Parameters;
 import org.junit.jupiter.api.Test;
 
-class AbstractPdsConnectorTest {
+class AbstractPrimaryDataSourceConnectorTest {
 
   private static final String DOMAIN = "https://ths.example.org/gpas/domain/PDS-TEST";
   private static final String GET_CONDITIONS =
@@ -94,12 +94,13 @@ class AbstractPdsConnectorTest {
         parameters);
   }
 
-  private static final class TestConnector extends AbstractPdsConnector {
+  private static final class TestConnector extends AbstractPrimaryDataSourceConnector {
 
-    private final ThsClient ths = new StaticMapThsClient(Map.of("PSN-1", "internal-1"));
+    private final TrustedThirdPartyClient trustedThirdParty =
+        new StaticMapTrustedThirdPartyClient(Map.of("PSN-1", "internal-1"));
 
     @Override
-    public String getPdsId() {
+    public String getPrimaryDataSourceId() {
       return "PDS-TEST";
     }
 
@@ -123,8 +124,8 @@ class AbstractPdsConnectorTest {
     }
 
     @Override
-    protected ThsClient thsClient() {
-      return ths;
+    protected TrustedThirdPartyClient trustedThirdPartyClient() {
+      return trustedThirdParty;
     }
   }
 }

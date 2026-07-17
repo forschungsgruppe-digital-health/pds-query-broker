@@ -33,7 +33,7 @@ The skeleton's integration tests assert conformance of produced bundles against 
 One thin vertical slice of `$GetConditions` on the **existing fanout topology**:
 
 1. Request message bundle → broker: loads the triple from the catalog server, validates well-formedness (no profile validation), publishes to `pds.broadcast`, tracks correlation.
-2. Reference connector: consumes from `req.{pdsId}`, resolves the pseudonym via a **`ThsClient` port backed by a static synthetic map** (config file), serves synthetic in-memory data, replies to the response queue.
+2. Reference connector: consumes from `req.{pdsId}`, resolves the pseudonym via a **`TrustedThirdPartyClient` port backed by a static synthetic map** (config file), serves synthetic in-memory data, replies to the response queue.
 3. Broker aggregates, honors `MessageHeader.destination` + `replyTo`, and converts timeouts/missing responses into an `OperationOutcome`.
 
 **Definition of done:** `docker compose up` runs the whole loop end-to-end, and an integration test (Testcontainers: RabbitMQ + HAPI catalog) proves request → aggregated response including the timeout path. CI builds and runs it.
@@ -45,7 +45,7 @@ One thin vertical slice of `$GetConditions` on the **existing fanout topology**:
 - **Conformance harness** (`conformance/` module): catalog-driven golden tests with synthetic test data under `catalog/testdata/GetConditions/`, runnable against any connector via Testcontainers; becomes the CI gate for connector changes.
 - **SDK runtime validation:** active only when a `targetProfile` is configured (exactly as documented in CONTRIBUTING/PDS_INTEGRATION), otherwise off.
 - **Two synthetic connector instances** with distinct PDS IDs, pseudonym domains, and disjoint synthetic datasets — proving broadcast fan-out, self-filtering, aggregation, partial-response/timeout handling, and per-PDS `Provenance`.
-- **MOSAiC gPAS/E-PIX dev containers** in the compose stack replace the static pseudonym map (config swap behind the `ThsClient` port — no code change). Real federated THS remains governance-gated.
+- **MOSAiC gPAS/E-PIX dev containers** in the compose stack replace the static pseudonym map (config swap behind the `TrustedThirdPartyClient` port — no code change). Real federated THS remains governance-gated.
 
 ### Increments 2–3 — topic-exchange migration (named increment)
 

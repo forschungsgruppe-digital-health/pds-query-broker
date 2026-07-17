@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.validation.ValidationResult;
-import de.tudresden.fgdh.querybroker.sdk.AbstractPdsConnector;
+import de.tudresden.fgdh.querybroker.sdk.AbstractPrimaryDataSourceConnector;
 import de.tudresden.fgdh.querybroker.sdk.BrokerMessages;
 import de.tudresden.fgdh.querybroker.sdk.BrokerProtocol;
 import java.util.List;
@@ -21,20 +21,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 /**
- * Conformance test base for ANY {@link AbstractPdsConnector} implementation
+ * Conformance test base for ANY {@link AbstractPrimaryDataSourceConnector} implementation
  * (CONTRIBUTING § 3): extend it, provide the connector under test plus
  * synthetic pseudonyms, and the harness pins the protocol behavior —
  * profile-valid response envelopes (validated against the catalog/ mirror of
  * the IG), self-filtering silence, and the machine-readable error model.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public abstract class PdsConnectorConformanceTest {
+public abstract class PrimaryDataSourceConnectorConformanceTest {
 
   protected static final FhirContext FHIR = FhirContext.forR4();
   private static CatalogValidator validator;
 
   /** The connector under test. */
-  protected abstract AbstractPdsConnector connector();
+  protected abstract AbstractPrimaryDataSourceConnector connector();
 
   /** A pseudonym of the connector's own domain that resolves to data. */
   protected abstract String knownPseudonym();
@@ -42,7 +42,7 @@ public abstract class PdsConnectorConformanceTest {
   /** A pseudonym of the connector's own domain that resolves to NO data. */
   protected abstract String emptyResultPseudonym();
 
-  /** A pseudonym of the connector's own domain the local THS cannot resolve. */
+  /** A pseudonym of the connector's own domain the local trusted third party (THS) cannot resolve. */
   protected abstract String unresolvablePseudonym();
 
   /** The canonical url of an operation the connector supports. */

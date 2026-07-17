@@ -3,12 +3,15 @@ package de.tudresden.fgdh.querybroker.sdk;
 import java.util.Map;
 import java.util.Optional;
 
-/** Static synthetic pseudonym map — the increment-1 stand-in for a real THS. */
-public final class StaticMapThsClient implements ThsClient {
+/**
+ * Static synthetic pseudonym map — the increment-1 stand-in for a real trusted
+ * third party (THS — <i>Treuhandstelle</i>).
+ */
+public final class StaticMapTrustedThirdPartyClient implements TrustedThirdPartyClient {
 
   private final Map<String, String> pseudonymToInternalId;
 
-  public StaticMapThsClient(Map<String, String> pseudonymToInternalId) {
+  public StaticMapTrustedThirdPartyClient(Map<String, String> pseudonymToInternalId) {
     this.pseudonymToInternalId = Map.copyOf(pseudonymToInternalId);
   }
 
