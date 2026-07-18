@@ -110,6 +110,18 @@ protected ProfileValidator profileValidator() {
 3. **Passwords:** never in YAML — inject via environment (`${TERMINOLOGY_KEYSTORE_PASSWORD}`) from the gitignored `docker/.env` (placeholders live in `.env.example`) or a secret store.
 4. **Hygiene:** if a certificate ever lands in git history, treat it as compromised — revoke/reissue via the SU-TermServ onboarding and rewrite history; a gitleaks pre-commit hook is recommended for this repo (as used elsewhere in the org).
 
+
+### Secret scanning (gitleaks)
+
+A gitleaks pre-commit hook blocks commits that introduce secrets. Enable it once per clone:
+
+```bash
+brew install gitleaks           # or see github.com/gitleaks/gitleaks
+git config core.hooksPath .githooks
+```
+
+The hook scans staged changes against `.gitleaks.toml`; CI (`gitleaks.yml`) scans full history on every push/PR. Documented false positives (e.g. the RabbitMQ dev-default password hash) are allowlisted in `.gitleaks.toml` — add an entry there rather than disabling the hook, and never `--no-verify` a real secret.
+
 ### Step 4: Register the handler
 
 ```java
