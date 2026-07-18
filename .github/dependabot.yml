@@ -1,0 +1,56 @@
+# Dependabot — version + security updates. Security updates (CVE-driven) also require
+# Dependency graph + alerts enabled in repo Settings; the Gradle transitive graph is fed
+# by .github/workflows/dependency-graph.yml (gradle dependency-submission).
+version: 2
+updates:
+  # ── Java / Gradle (multi-module: one entry per build.gradle.kts directory) ──────────
+  - package-ecosystem: "gradle"
+    directories:
+      - "/"
+      - "/broker"
+      - "/connector-sdk"
+      - "/conformance"
+      - "/connectors/pds-example"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "05:00"
+    open-pull-requests-limit: 10
+    groups:
+      spring:
+        patterns: ["org.springframework*", "org.springframework.boot*", "io.spring*"]
+      hapi-fhir:
+        patterns: ["ca.uhn.hapi.fhir*"]
+      test-tooling:
+        patterns: ["org.junit*", "org.assertj*", "org.testcontainers*", "org.mockito*"]
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  # ── Docker base images (broker + reference connector) ──────────────────────────────
+  - package-ecosystem: "docker"
+    directories:
+      - "/docker/broker"
+      - "/docker/pds-example"
+    schedule:
+      interval: "weekly"
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # ── GitHub Actions (keeps pinned SHAs / versions current across all workflows) ──────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # ── Python (AsyncAPI contract-test stub) ───────────────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/tools/asyncapi-stub"
+    schedule:
+      interval: "weekly"
+    groups:
+      pip:
+        patterns: ["*"]

@@ -50,7 +50,10 @@ On conflict, this file wins.
   `./gradlew :connectors:pds-example:bootRun`
 
 CI (GitHub Actions): AsyncAPI validation, Docker validation (compose config + hadolint + JSON/shell
-checks), SUSHI validation + IG Publisher + GitHub Pages deploy, release-please.
+checks), SUSHI validation + IG Publisher + GitHub Pages deploy, release-please. **Security**:
+gitleaks (secrets), CodeQL (SAST, Java+Python), Trivy (container/IaC), Dependabot (deps, all
+ecosystems) + Gradle dependency-submission (transitive graph), OpenSSF Scorecard, and an optional
+AI security review on PRs (`security-review.yml`, needs the `ANTHROPIC_API_KEY` secret).
 
 ## Conventions
 
@@ -137,6 +140,11 @@ The portable form is **Agent Skills** (`skills/<name>/SKILL.md`,
 - **`branching-strategist`** — set up (or change) a branching strategy; first run presents the options
   (trunk-based/GitHub Flow/…) and scaffolds the choice + an ADR. This repo is already trunk-based, so
   it detects that and only offers adjustments
+- **`security-reviewer`** — read-only, authorized security review of this system: STRIDE threat model
+  + a fixed checklist (authz/tenancy isolation, secrets, injection, crypto, PII/pseudonym handling,
+  deps/supply-chain, container, DoS) + triage of the scanner output (CodeQL/Trivy/Dependabot/gitleaks);
+  returns a dated `docs/reports/` report + ready-to-apply fixes. Findings are leads a human confirms.
+  Complements the PR-time `security-review.yml` (claude-code-security-review) Action
 
 **How each tool accesses them:**
 
