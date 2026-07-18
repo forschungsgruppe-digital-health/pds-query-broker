@@ -44,9 +44,10 @@ public record TerminologyServerConfig(
   /**
    * Reads the configuration from environment variables — {@code
    * TERMINOLOGY_SERVER_URL} (required for a non-empty result), {@code
-   * TERMINOLOGY_CLIENT_KEYSTORE}, {@code TERMINOLOGY_CLIENT_KEYSTORE_PASSWORD},
+   * TERMINOLOGY_CLIENT_KEYSTORE}, {@code TERMINOLOGY_KEYSTORE_PASSWORD},
    * {@code TERMINOLOGY_TRUSTSTORE}, {@code TERMINOLOGY_TRUSTSTORE_PASSWORD}.
-   * Used by the conformance harness to opt in without code changes.
+   * Used by the conformance harness and the live smoke test to opt in without
+   * code changes (the password variable names match {@code docker/.env}).
    */
   public static Optional<TerminologyServerConfig> fromEnvironment() {
     String url = System.getenv("TERMINOLOGY_SERVER_URL");
@@ -59,7 +60,7 @@ public record TerminologyServerConfig(
         new TerminologyServerConfig(
             url,
             keystore == null || keystore.isBlank() ? null : Path.of(keystore),
-            System.getenv("TERMINOLOGY_CLIENT_KEYSTORE_PASSWORD"),
+            System.getenv("TERMINOLOGY_KEYSTORE_PASSWORD"),
             truststore == null || truststore.isBlank() ? null : Path.of(truststore),
             System.getenv("TERMINOLOGY_TRUSTSTORE_PASSWORD")));
   }
