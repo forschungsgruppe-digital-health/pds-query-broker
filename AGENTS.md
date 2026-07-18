@@ -145,6 +145,14 @@ The portable form is **Agent Skills** (`skills/<name>/SKILL.md`,
   deps/supply-chain, container, DoS) + triage of the scanner output (CodeQL/Trivy/Dependabot/gitleaks);
   returns a dated `docs/reports/` report + ready-to-apply fixes. Findings are leads a human confirms.
   Complements the PR-time `security-review.yml` (claude-code-security-review) Action
+- **`dependency-scanner`** — setup wizard (write-capable): set up (or change) CI dependency/CVE/supply-chain
+  scanning; first run detects the stack + visibility, presents options (Dependabot/Renovate, Trivy/Grype/OSV,
+  Scorecard, SBOM) and scaffolds config + an ADR. Idempotent — detects this repo's existing Dependabot +
+  dependency-submission + Trivy + Scorecard setup and only offers adjustments
+- **`security-scanner`** — setup wizard (write-capable): set up (or change) CI security review (secret
+  scanning, SAST, AI PR review); first run presents options (gitleaks, CodeQL/Semgrep,
+  claude-code-security-review) and scaffolds workflows + installs `security-reviewer` + an ADR. Idempotent —
+  detects this repo's existing gitleaks + CodeQL + `security-review.yml`
 
 **How each tool accesses them:**
 
