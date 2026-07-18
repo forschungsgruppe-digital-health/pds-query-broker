@@ -153,6 +153,10 @@ The portable form is **Agent Skills** (`skills/<name>/SKILL.md`,
   scanning, SAST, AI PR review); first run presents options (gitleaks, CodeQL/Semgrep,
   claude-code-security-review) and scaffolds workflows + installs `security-reviewer` + an ADR. Idempotent —
   detects this repo's existing gitleaks + CodeQL + `security-review.yml`
+- **`template-updater`** — reconcile this repo's shared tooling (skills + CI setup) with the latest
+  [arc42-project-template](https://github.com/forschungsgruppe-digital-health/arc42-project-template)
+  release, preserving this repo's content + customizations; opens a PR and updates `.arc42-template.json`.
+  Triggered by the monthly `template-sync-check` drift issue or run manually
 
 **How each tool accesses them:**
 
