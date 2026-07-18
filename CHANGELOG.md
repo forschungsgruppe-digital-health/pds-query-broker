@@ -8,6 +8,29 @@ From v0.2.0 onward, releases and changelog entries are generated automatically b
 Entries up to and including v0.2.0 were written manually following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.9.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.8.0...v0.9.0) (2026-07-18)
+
+
+### Features
+
+* track arc42-project-template toolkit (drift notifier + template-updater) ([#40](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/40)) ([60a9468](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/60a946846e5b62441cc8b226c19389ef784960f5))
+
+
+### Bug Fixes
+
+* **ci:** run AsyncAPI contract test broker in fanout mode (regression from [#20](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/20)) ([#42](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/42)) ([e4af8cd](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/e4af8cd369bb9ea6e2f0d852a15023dcc2a9cb1d))
+
+
+### Build & Dependencies
+
+* **deps:** Bump gradle-wrapper from 8.14.2 to 9.6.1 ([#31](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/31)) ([e9e995c](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/e9e995c0f638486ee62c260f2199db281142213f))
+* **deps:** Bump org.gradle.toolchains.foojay-resolver-convention from 0.8.0 to 1.0.0 ([#32](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/32)) ([a56d90a](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/a56d90a82185da1e83109c2d57676985f55b33a7))
+* **deps:** Bump the actions group across 1 directory with 15 updates ([#36](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/36)) ([8157299](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/81572995fbfed7c8285d35a64c0982f2cd8a50fb))
+* **deps:** Bump the minor-and-patch group across 3 directories with 2 updates ([#26](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/26)) ([39e90e6](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/39e90e64366a6ee0afb746e3ceb205047149cca2))
+* **deps:** Bump the pip group across 1 directory with 4 updates ([#30](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/30)) ([eb5553f](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/eb5553f16d8dd1eb1438b6503b73783fe08f7adc))
+* **deps:** Spring Boot 4.1 + JUnit 6.1 + Testcontainers 2.0 migration ([#41](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/41)) ([267c1f2](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/267c1f2a1a487a26976dffb293da3f350173a213))
+* **docker:** Gradle build image 9.6.1 + ignore temurin majors (ADR-0010) ([#43](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/43)) ([4c21c06](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/4c21c06148692c2bb0f84b7d67580dd8ed34d690))
+
 ## [0.8.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.7.0...v0.8.0) (2026-07-18)
 
 

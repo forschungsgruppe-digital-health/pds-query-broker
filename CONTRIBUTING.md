@@ -1,6 +1,6 @@
 # Contributing
 
-> Version 0.8.0 <!-- x-release-please-version -->
+> Version 0.9.0 <!-- x-release-please-version -->
 
 This document describes how the Query Broker is developed, tested, and extended with project-specific operations.
 
