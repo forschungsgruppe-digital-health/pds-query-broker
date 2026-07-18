@@ -11,7 +11,7 @@
 
 - Skills are auto-discovered via `.claude/skills/` (symlinks into `skills/` — edit `skills/` only):
   `arc42-generator`, `architecture-dev`, `fhir-ig`, `docs-auditor`, `release-manager`,
-  `branching-strategist`, `security-reviewer`.
+  `branching-strategist`, `security-reviewer`, `dependency-scanner`, `security-scanner`.
 - For an authorized security review use `security-reviewer` (read-only; STRIDE + checklist + triages
   CodeQL/Trivy/Dependabot/gitleaks → a dated `docs/reports/` report + fixes; findings are leads a
   human confirms). It complements the PR-time `security-review.yml` (claude-code-security-review).
