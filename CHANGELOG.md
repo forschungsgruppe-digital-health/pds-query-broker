@@ -8,6 +8,21 @@ From v0.2.0 onward, releases and changelog entries are generated automatically b
 Entries up to and including v0.2.0 were written manually following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.6.0...v0.7.0) (2026-07-18)
+
+
+### Features
+
+* **sdk:** fTTP dispatcher pseudonym resolution — optional, feature-toggled ([#21](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/21)) ([27070f1](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/27070f15a12569e35272b7f00c3d1711aa3f31f9))
+* **skills:** docs-auditor + unified arc42-generator + release/branching setup wizards ([#22](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/22)) ([49d3ebb](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/49d3ebb92c11c8d52fd0440f2527f7f7dd50ae28))
+* topic-exchange routing — publish only to addressed sites (ADR-006 rev.) ([#20](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/20)) ([6284070](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/62840706b151ff85eaad49d493f20d16fac512e1))
+
+
+### Documentation
+
+* consolidate architecture docs into split docs/arc42/ (apply arc42 template) ([#23](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/23)) ([57efee2](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/57efee2b44f1b9e0329320acda73a5dd9ccb348d))
+* fTTP FHIR dispatcher plan update + secure mTLS certificate provisioning ([#17](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/17)) ([e7ffe27](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/e7ffe27b5ed56cde0783be004502e132ed808abd))
+
 ## [0.6.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.5.0...v0.6.0) (2026-07-17)
 
 
