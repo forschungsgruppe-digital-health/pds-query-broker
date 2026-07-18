@@ -1,6 +1,6 @@
 # Query Broker
 
-> Version 0.7.0 <!-- x-release-please-version --> · [CHANGELOG](CHANGELOG.md)
+> Version 0.8.0 <!-- x-release-please-version --> · [CHANGELOG](CHANGELOG.md)
 
 **Federated query broker for integrating distributed primary data sources (PDS) via a patient portal and third-party applications.**
 

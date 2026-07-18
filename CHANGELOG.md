@@ -8,6 +8,13 @@ From v0.2.0 onward, releases and changelog entries are generated automatically b
 Entries up to and including v0.2.0 were written manually following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.7.0...v0.8.0) (2026-07-18)
+
+
+### Features
+
+* **skills:** add dependency-scanner + security-scanner setup wizards ([#37](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/37)) ([a449207](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/a4492074fa5db47fb8581cf332b5a96f7dd9f4c1))
+
 ## [0.7.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.6.0...v0.7.0) (2026-07-18)
 
 
