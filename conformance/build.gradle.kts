@@ -12,7 +12,7 @@ dependencies {
     // The abstract conformance base class is part of the library surface.
     api(platform("org.junit:junit-bom:6.1.2"))
     api("org.junit.jupiter:junit-jupiter")
-    api("org.assertj:assertj-core:3.26.3")
+    api("org.assertj:assertj-core:3.27.7")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
