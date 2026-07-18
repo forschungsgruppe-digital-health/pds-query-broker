@@ -1,0 +1,57 @@
+name: template-sync-check
+
+# Drift NOTIFIER: monthly, compares this repo's recorded template version
+# (.arc42-template.json) against the latest arc42-project-template release. If behind, it
+# opens/updates a tracking issue telling you to run the `template-updater` skill — which
+# reconciles the shared tooling (skills + CI setup) while preserving this repo's content.
+# It does NOT modify files (no clobbering); the human-in-the-loop skill applies updates.
+# Inert in the template repo itself.
+
+on:
+  schedule:
+    - cron: "0 6 1 * *" # monthly, the 1st at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    if: ${{ github.repository != 'forschungsgruppe-digital-health/arc42-project-template' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Check for a newer template release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TEMPLATE: forschungsgruppe-digital-health/arc42-project-template
+        run: |
+          set -euo pipefail
+          if [ ! -f .arc42-template.json ]; then
+            echo "::warning::.arc42-template.json missing — cannot determine the template version this repo tracks."; exit 0
+          fi
+          have=$(jq -r '.version // "unknown"' .arc42-template.json)
+          latest=$(gh release view --repo "$TEMPLATE" --json tagName -q .tagName 2>/dev/null | sed 's/^v//' || true)
+          if [ -z "${latest:-}" ]; then echo "No template release found — nothing to compare."; exit 0; fi
+          echo "tracked=$have  latest=$latest"
+          if [ "$have" = "$latest" ]; then echo "Up to date."; exit 0; fi
+
+          title="Template update available: v$have → v$latest"
+          {
+            printf '%s\n\n' "This repo tracks the [arc42-project-template](https://github.com/$TEMPLATE) shared toolkit and is on \`$have\`; the latest release is \`$latest\`."
+            printf '%s\n\n' "Run the **\`template-updater\`** skill to reconcile the shared tooling (skills + CI setup wizards) into this repo while preserving its own content and customizations. It opens a PR and updates \`.arc42-template.json\`."
+            printf '%s\n' "- Template releases / changelog: https://github.com/$TEMPLATE/releases"
+            printf '%s\n\n' "- How reconciliation works: \`skills/template-updater/SKILL.md\`"
+            printf '%s\n' "_Automated by \`template-sync-check\`; this issue updates itself until the versions match._"
+          } > /tmp/template-drift-issue.md
+
+          # Dedup by title prefix (no label dependency).
+          num=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "Template update available in:title" --json number -q '.[0].number' || true)
+          if [ -n "${num:-}" ]; then
+            gh issue edit "$num" --repo "$GITHUB_REPOSITORY" --title "$title" --body-file /tmp/template-drift-issue.md
+            echo "Updated tracking issue #$num"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file /tmp/template-drift-issue.md
+            echo "Opened a tracking issue"
+          fi

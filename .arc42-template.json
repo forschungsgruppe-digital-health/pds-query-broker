@@ -1,0 +1,6 @@
+{
+  "template": "forschungsgruppe-digital-health/arc42-project-template",
+  "version": "0.3.0",
+  "reconciled_at": "2026-07-18",
+  "note": "This repo shares the arc42-project-template's portable tooling (skills + CI setup). The template-sync-check workflow flags newer template releases; the template-updater skill reconciles them while preserving this repo's content and customizations."
+}

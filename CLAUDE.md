@@ -11,7 +11,11 @@
 
 - Skills are auto-discovered via `.claude/skills/` (symlinks into `skills/` — edit `skills/` only):
   `arc42-generator`, `architecture-dev`, `fhir-ig`, `docs-auditor`, `release-manager`,
-  `branching-strategist`, `security-reviewer`, `dependency-scanner`, `security-scanner`.
+  `branching-strategist`, `security-reviewer`, `dependency-scanner`, `security-scanner`,
+  `template-updater`.
+- This repo tracks the shared `arc42-project-template` toolkit (`.arc42-template.json` stamp); the
+  monthly `template-sync-check` workflow flags newer template releases and `template-updater` reconciles
+  them, preserving this repo's content.
 - For an authorized security review use `security-reviewer` (read-only; STRIDE + checklist + triages
   CodeQL/Trivy/Dependabot/gitleaks → a dated `docs/reports/` report + fixes; findings are leads a
   human confirms). It complements the PR-time `security-review.yml` (claude-code-security-review).
