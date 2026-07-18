@@ -1,5 +1,5 @@
 # Build stage — Gradle version matches the repo's wrapper (gradle/wrapper/).
-FROM gradle:8.14.2-jdk21 AS build
+FROM gradle:9.6.1-jdk21 AS build
 
 WORKDIR /workspace
 COPY . .
