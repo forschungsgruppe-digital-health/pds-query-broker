@@ -79,6 +79,10 @@ services:
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-broker}
       BROKER_CATALOG_URL: http://catalog-server:8080/fhir
       BROKER_AGGREGATOR_TIMEOUT_MS: 8000
+      # Routing topology: topic (default, ADR-006 rev.) or fanout (legacy, still
+      # supported). Overridable so the AsyncAPI contract test can exercise the
+      # fanout wire contract; the topic default is covered by WalkingSkeletonIntegrationTest.
+      BROKER_ROUTING_MODE: ${BROKER_ROUTING_MODE:-topic}
     depends_on:
       rabbitmq:
         condition: service_healthy
