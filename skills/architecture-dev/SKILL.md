@@ -1,6 +1,6 @@
 ---
 name: architecture-dev
-description: Evolve the Query Broker architecture — AMQP topology, FHIR messaging semantics, catalog design, ADRs. Use when evaluating technologies/standards, extending the topology, or making any architecture-level change across specs/, docker/, ig/ and docs/ARCHITECTURE.md.
+description: Evolve the Query Broker architecture — AMQP topology, FHIR messaging semantics, catalog design, ADRs. Use when evaluating technologies/standards, extending the topology, or making any architecture-level change across specs/, docker/, ig/ and docs/arc42/.
 ---
 
 # Skill: architecture development
@@ -36,10 +36,10 @@ You are a specialist for evolving the Query Broker architecture.
 4. **FHIR conformance** — OperationDefinition names in PascalCase (opd-0). MessageDefinition requires `date`.
 5. **Multi-client** — every architecture change must account for multi-client routing (destination + replyTo).
 6. **New exchanges/queues** — register in `docker/rabbitmq/definitions.json` AND `specs/pds-connector-base.yaml`.
-7. **New ADRs** — number sequentially (currently up to ADR-009), in `docs/ARCHITECTURE.md` section 9.
+7. **New ADRs** — number sequentially (currently up to ADR-013), in `docs/arc42/09_architecture_decisions.md`.
 8. **Changelog** — do not edit `CHANGELOG.md` by hand; describe the change in Conventional-Commit messages (release-please generates the changelog).
 
 ## Typical tasks
 
 - "Evaluate [technology/standard] for [purpose]" → analysis with pros/cons, possibly an ADR
-- "Extend the topology by [channel]" → AsyncAPI + Docker + ARCHITECTURE.md
+- "Extend the topology by [channel]" → AsyncAPI + Docker + docs/arc42/

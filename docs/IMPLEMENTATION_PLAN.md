@@ -1,6 +1,6 @@
 # Implementation Plan — PDS Query Broker
 
-> Status: **agreed** (decision session 2026-07-13) · Governing ADRs: [ADR-010, ADR-011](ARCHITECTURE.md#9-architecture-decisions)
+> Status: **agreed** (decision session 2026-07-13) · Governing ADRs: [ADR-010, ADR-011](arc42/09_architecture_decisions.md#9-architecture-decisions)
 
 This plan turns the specification-first repository into a working broker + connector-SDK + reference-connector implementation. Decisions below were made explicitly; changes to them require revisiting the corresponding ADR.
 

@@ -21,7 +21,7 @@
   with `python3 ig/scripts/mirror-catalog.py`. Never author or edit FHIR conformance JSON by
   hand — FSH is the only source (CI enforces catalog/FSH sync).
 - Any architecture-level change: use `architecture-dev` and keep
-  `specs/` + `docker/rabbitmq/definitions.json` + `docs/ARCHITECTURE.md` in sync; document
+  `specs/` + `docker/rabbitmq/definitions.json` + `docs/arc42/` in sync; document
   decisions as ADRs (`arc42-generator`).
 - All changes via short-lived branch → PR into `main` (trunk-based, squash-merge,
   Conventional-Commit title). Do not hand-edit release-please-owned files

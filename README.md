@@ -4,7 +4,7 @@
 
 **Federated query broker for integrating distributed primary data sources (PDS) via a patient portal and third-party applications.**
 
-> **Status:** walking skeleton (increment 1, [ADR-011](docs/ARCHITECTURE.md#adr-011-staged-pilot-implementation--walking-skeleton-first)). The broker, connector SDK, and a synthetic reference connector run the `$GetConditions` loop end-to-end over the fanout topology — including catalog lookup, self-filtering, aggregation, and the timeout → `OperationOutcome` path. Not yet included (staged): profile validation, conformance harness, BFF, real THS, auth (see [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)).
+> **Status:** walking skeleton (increment 1, [ADR-011](docs/arc42/09_architecture_decisions.md#adr-011-staged-pilot-implementation--walking-skeleton-first)). The broker, connector SDK, and a synthetic reference connector run the `$GetConditions` loop end-to-end over the fanout topology — including catalog lookup, self-filtering, aggregation, and the timeout → `OperationOutcome` path. Not yet included (staged): profile validation, conformance harness, BFF, real THS, auth (see [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)).
 
 ---
 
@@ -107,7 +107,7 @@ For local development without containers (RabbitMQ + catalog still via compose):
 
 | Document | Content |
 |----------|---------|
-| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Arc42 architecture documentation (12 chapters) |
+| **[Architecture docs](docs/arc42/README.md)** | Arc42 architecture documentation (12 sections, split) |
 | **[PDS_INTEGRATION.md](PDS_INTEGRATION.md)** | Language-agnostic implementation guide for PDS developers |
 | **[CONTRIBUTING.md](CONTRIBUTING.md)** | Broker/SDK development, conformance tests, defining new operations, branching & releases |
 | **[AGENTS.md](AGENTS.md)** | Operational context for AI coding agents (vendor-neutral) |

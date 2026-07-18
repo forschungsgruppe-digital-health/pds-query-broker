@@ -26,7 +26,7 @@ On conflict, this file wins.
 
 ## Repository map
 
-- `docs/ARCHITECTURE.md` — arc42 v9.0 architecture documentation (12 sections, ADR-001…ADR-009)
+- `docs/arc42/` — arc42 v9.0 architecture documentation, split one file per section (12 sections, ADR-001…ADR-013); the legacy `docs/ARCHITECTURE.md` is a redirect stub
 - `PDS_INTEGRATION.md` — language-agnostic implementation guide for PDS connector developers
 - `CONTRIBUTING.md` — development setup, connector guide, conventions, branching & releases
 - `specs/pds-connector-base.yaml` — AsyncAPI transport contract (AMQP topology only)
@@ -99,7 +99,7 @@ checks), SUSHI validation + IG Publisher + GitHub Pages deploy, release-please.
 - Profile binding is optional and project-specific — never architecturally required.
 - New exchanges/queues must be registered in BOTH `docker/rabbitmq/definitions.json` and
   `specs/pds-connector-base.yaml`.
-- Architecture decisions are recorded as ADRs in `docs/ARCHITECTURE.md` § 9 (sequential numbering).
+- Architecture decisions are recorded as ADRs in `docs/arc42/09_architecture_decisions.md` (sequential numbering).
 - FSH (`ig/input/fsh/`) is the single source of truth for FHIR conformance artifacts; `catalog/`
   holds only SUSHI-generated mirrors (enforced by the CI drift gate in `ig-build.yml`).
 
@@ -120,8 +120,8 @@ The portable form is **Agent Skills** (`skills/<name>/SKILL.md`,
 
 - **`arc42-generator`** — generate the arc42 v9.0 architecture docs from code (no speculation) OR
   consolidate scattered docs into a split `docs/arc42/` (one file per section, novice+expert
-  readable), reusing `docs-auditor` as the before/after quality gate; migrates the legacy single-file
-  `docs/ARCHITECTURE.md`
+  readable), reusing `docs-auditor` as the before/after quality gate. The split `docs/arc42/` is
+  canonical; the legacy `docs/ARCHITECTURE.md` is a redirect stub
 - **`architecture-dev`** — evolve the architecture (AMQP topology, FHIR messaging semantics,
   catalog design, ADRs) consistently across `specs/`, `docker/`, `ig/`, `docs/`
 - **`fhir-ig`** — FHIR R4 profiling with FSH/SUSHI (profiles, operation triples, examples,
