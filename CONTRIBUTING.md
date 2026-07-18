@@ -112,6 +112,17 @@ protected ProfileValidator profileValidator() {
 
 **Trusted third party — pseudonym resolution (feature toggle):** `pds.connector.ths.mode` selects how a connector resolves the pseudonym in a request back to a local id. `STATIC` (default) uses the synthetic pseudonym map (increment-1 stand-in). `DISPATCHER` resolves through the [fTTP FHIR dispatcher](https://github.com/forschungsgruppe-digital-health/fttp-fhir-dispatcher) — the project's re-implementation of the THS Greifswald TTP-FHIR gateway (gPAS `$dePseudonymize`); the same client works against the real THS gateway. Configure `pds.connector.ths.dispatcher-base-url` (e.g. `http://ttp-dispatcher:8080`) and `pds.connector.ths.target-domain` (the gPAS domain name). Start the optional dispatcher in the dev stack with `docker compose --profile ths up`. This is off by default, so nothing changes unless you opt in.
 
+### Secret scanning (gitleaks)
+
+A gitleaks pre-commit hook blocks commits that introduce secrets. Enable it once per clone:
+
+```bash
+brew install gitleaks           # or see github.com/gitleaks/gitleaks
+git config core.hooksPath .githooks
+```
+
+The hook scans staged changes against `.gitleaks.toml`; CI (`gitleaks.yml`) scans full history on every push/PR. Documented false positives (e.g. the RabbitMQ dev-default password hash) are allowlisted in `.gitleaks.toml` — add an entry there rather than disabling the hook, and never `--no-verify` a real secret.
+
 ### Step 4: Register the handler
 
 ```java
