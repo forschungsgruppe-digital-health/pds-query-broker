@@ -40,12 +40,47 @@ public final class BrokerProtocol {
     }
   }
 
+  /** Fanout exchange — the entry-architecture broadcast topology (ADR-006). */
   public static final String BROADCAST_EXCHANGE = "pds.broadcast";
+
+  /**
+   * Topic exchange — the target routing topology (ADR-006 rev.): the broker
+   * publishes each request only to the addressed sites, keyed
+   * {@code pds.{pdsId}.request}, instead of broadcasting to everyone.
+   */
+  public static final String TOPIC_EXCHANGE = "pds.topic";
+
   public static final String REQUEST_QUEUE_PREFIX = "req.";
   public static final String RESPONSE_QUEUE_PREFIX = "responses.";
   public static final String DEFAULT_RESPONSE_QUEUE = "responses.default";
 
   public static final String FHIR_JSON_CONTENT_TYPE = "application/fhir+json";
+
+  /**
+   * The topic routing key a request for {@code pdsId} is published with, and
+   * the binding key a connector for {@code pdsId} subscribes with:
+   * {@code pds.{pdsId}.request}.
+   */
+  public static String requestRoutingKey(String pdsId) {
+    return "pds." + pdsId + ".request";
+  }
+
+  /**
+   * Derives the primary-data-source identifier from a pseudonym's gPAS domain
+   * system by convention (the last path segment): e.g.
+   * {@code https://ths.example.org/gpas/domain/PDS-EXAMPLE} → {@code PDS-EXAMPLE}.
+   * This is the domain→site mapping the topic router uses.
+   */
+  public static String primaryDataSourceIdOf(String gpasDomainSystem) {
+    if (gpasDomainSystem == null || gpasDomainSystem.isBlank()) {
+      return "";
+    }
+    String trimmed =
+        gpasDomainSystem.endsWith("/")
+            ? gpasDomainSystem.substring(0, gpasDomainSystem.length() - 1)
+            : gpasDomainSystem;
+    return trimmed.substring(trimmed.lastIndexOf('/') + 1);
+  }
 
   private BrokerProtocol() {}
 }
