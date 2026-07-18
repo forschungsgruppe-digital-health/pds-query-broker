@@ -13,6 +13,13 @@ pds:
   connector:
     pds-id: ${PDS_CONNECTOR_PDS_ID:PDS-EXAMPLE}
     gpas-domain: ${PDS_CONNECTOR_GPAS_DOMAIN:https://ths.example.org/gpas/domain/PDS-EXAMPLE}
+    # Trusted third party (pseudonym resolution). mode STATIC (default) uses the
+    # synthetic pseudonyms map below; DISPATCHER resolves via the fTTP FHIR
+    # dispatcher (gPAS $dePseudonymize). Example for DISPATCHER:
+    # ths:
+    #   mode: DISPATCHER
+    #   dispatcher-base-url: http://ttp-dispatcher:8080
+    #   target-domain: PDS-EXAMPLE
     request-queue: req.${PDS_CONNECTOR_PDS_ID:PDS-EXAMPLE}
     # Static synthetic pseudonym map — increment-1 THS stand-in (ADR-011).
     pseudonyms:

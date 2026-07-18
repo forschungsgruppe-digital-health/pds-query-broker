@@ -3,6 +3,7 @@ package de.tudresden.fgdh.querybroker.pdsexample;
 import ca.uhn.fhir.context.FhirContext;
 import de.tudresden.fgdh.querybroker.sdk.AbstractPrimaryDataSourceConnector;
 import de.tudresden.fgdh.querybroker.sdk.CatalogProfileValidator;
+import de.tudresden.fgdh.querybroker.sdk.DispatcherTrustedThirdPartyClient;
 import de.tudresden.fgdh.querybroker.sdk.OperationHandler;
 import de.tudresden.fgdh.querybroker.sdk.ProfileValidator;
 import de.tudresden.fgdh.querybroker.sdk.StaticMapTrustedThirdPartyClient;
@@ -25,7 +26,7 @@ public class ExampleConnector extends AbstractPrimaryDataSourceConnector {
 
   public ExampleConnector(ConnectorProperties properties, SyntheticConditionStore store) {
     this.properties = properties;
-    this.trustedThirdPartyClient = new StaticMapTrustedThirdPartyClient(properties.pseudonyms());
+    this.trustedThirdPartyClient = trustedThirdPartyClient(properties);
     this.store = store;
     this.profileValidator =
         properties.validationCatalogDir() == null || properties.validationCatalogDir().isBlank()
@@ -34,6 +35,28 @@ public class ExampleConnector extends AbstractPrimaryDataSourceConnector {
                 FhirContext.forR4(),
                 Path.of(properties.validationCatalogDir()),
                 terminologyServerConfig(properties));
+  }
+
+  /**
+   * Feature toggle (pds.connector.ths.mode): STATIC uses the synthetic
+   * pseudonym map; DISPATCHER resolves pseudonyms through the fTTP FHIR
+   * dispatcher (gPAS $dePseudonymize).
+   */
+  private static TrustedThirdPartyClient trustedThirdPartyClient(ConnectorProperties properties) {
+    ConnectorProperties.ThsProperties ths = properties.ths();
+    if (ths.mode() == ConnectorProperties.ThsProperties.Mode.DISPATCHER) {
+      if (ths.dispatcherBaseUrl() == null || ths.dispatcherBaseUrl().isBlank()) {
+        throw new IllegalStateException(
+            "pds.connector.ths.mode=DISPATCHER requires pds.connector.ths.dispatcher-base-url");
+      }
+      String targetDomain =
+          ths.targetDomain() == null || ths.targetDomain().isBlank()
+              ? properties.pdsId()
+              : ths.targetDomain();
+      return new DispatcherTrustedThirdPartyClient(
+          FhirContext.forR4(), ths.dispatcherBaseUrl(), targetDomain);
+    }
+    return new StaticMapTrustedThirdPartyClient(properties.pseudonyms());
   }
 
   private static TerminologyServerConfig terminologyServerConfig(ConnectorProperties properties) {

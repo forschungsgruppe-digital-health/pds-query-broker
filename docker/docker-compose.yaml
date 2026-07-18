@@ -107,6 +107,10 @@ services:
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-broker}
       PDS_CONNECTOR_PDS_ID: PDS-EXAMPLE
       PDS_CONNECTOR_GPAS_DOMAIN: https://ths.example.org/gpas/domain/PDS-EXAMPLE
+      # Trusted third party (ADR-011): pseudonym resolution. Default STATIC
+      # (synthetic map). To resolve via the fTTP dispatcher instead, start the
+      # stack WITH the ths profile (`docker compose --profile ths up`) and set:
+      # SPRING_APPLICATION_JSON: '{"pds":{"connector":{"ths":{"mode":"DISPATCHER","dispatcher-base-url":"http://ttp-dispatcher:8080","target-domain":"PDS-EXAMPLE"}}}}'
       # Terminology server (ADR-013): mount certificates read-only from OUTSIDE
       # the repo and reference them via pds.connector.terminology.* — see
       # CONTRIBUTING § 2. Example:
@@ -123,6 +127,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ── fTTP FHIR dispatcher (OPTIONAL trusted third party) ─────────────────────
+  # Re-implements the THS Greifswald TTP-FHIR gateway (gPAS · E-PIX · gICS ·
+  # Dispatcher) — the pseudonym service a connector uses when its THS mode is
+  # DISPATCHER. Optional: only started with `docker compose --profile ths up`.
+  # gPAS endpoint inside the network: http://ttp-dispatcher:8080/ttp-fhir/fhir/gpas
+  ttp-dispatcher:
+    image: ghcr.io/forschungsgruppe-digital-health/fttp-fhir-dispatcher:0.6.0
+    container_name: qb-ttp-dispatcher
+    profiles: ["ths"]
+    ports:
+      - "8086:8080"
+    environment:
+      DISPATCHER_SEED: "42"          # deterministic pseudonyms across machines
+      DISPATCHER_SCENARIO: "demo"    # pre-loaded synthetic patients + consents
 
   # ── PDS example connector B (second synthetic site: fan-out demo) ───────────
   pds-example-b:
