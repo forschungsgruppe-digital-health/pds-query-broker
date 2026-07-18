@@ -1,12 +1,12 @@
 # Build stage — Gradle version matches the repo's wrapper (gradle/wrapper/).
-FROM gradle:8.14.2-jdk21 AS build
+FROM gradle:9.6.1-jdk21 AS build
 
 WORKDIR /workspace
 COPY . .
 RUN gradle :connectors:pds-example:bootJar --no-daemon
 
 # eclipse-temurin JRE (multi-arch; the alpine variant has no arm64 manifest)
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 
 LABEL maintainer="Query Broker Project"
 LABEL description="PDS example connector - synthetic reference implementation"
