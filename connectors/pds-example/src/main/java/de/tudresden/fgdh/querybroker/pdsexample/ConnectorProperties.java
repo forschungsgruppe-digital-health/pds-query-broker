@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param terminology optional remote FHIR terminology server (ADR-013);
  *     unset = terminology/binding checks stay disabled (structural
  *     validation only)
+ * @param ths trusted-third-party (pseudonym resolution) settings; the mode
+ *     toggle selects the static map (default) or the fTTP dispatcher
  */
 @ConfigurationProperties(prefix = "pds.connector")
 public record ConnectorProperties(
@@ -30,11 +32,13 @@ public record ConnectorProperties(
     Map<String, String> pseudonyms,
     Map<String, String> targetProfiles,
     String validationCatalogDir,
-    TerminologyProperties terminology) {
+    TerminologyProperties terminology,
+    ThsProperties ths) {
 
   public ConnectorProperties {
     pseudonyms = pseudonyms == null ? Map.of() : Map.copyOf(pseudonyms);
     targetProfiles = targetProfiles == null ? Map.of() : Map.copyOf(targetProfiles);
+    ths = ths == null ? ThsProperties.staticDefault() : ths;
   }
 
   /**
@@ -49,4 +53,33 @@ public record ConnectorProperties(
       String clientKeystorePassword,
       String truststore,
       String truststorePassword) {}
+
+  /**
+   * Trusted-third-party (THS) pseudonym-resolution settings. Feature toggle
+   * {@code mode}: {@code STATIC} (default — the synthetic increment-1 map) or
+   * {@code DISPATCHER} (the fTTP FHIR dispatcher / THS Greifswald TTP-FHIR
+   * gateway gPAS module). The dispatcher fields are required only in
+   * {@code DISPATCHER} mode.
+   *
+   * @param mode STATIC | DISPATCHER
+   * @param dispatcherBaseUrl TTP-FHIR gateway base (e.g. http://ttp-dispatcher:8080)
+   * @param targetDomain the gPAS domain name pseudonyms belong to
+   */
+  public record ThsProperties(Mode mode, String dispatcherBaseUrl, String targetDomain) {
+
+    public enum Mode {
+      STATIC,
+      DISPATCHER
+    }
+
+    public ThsProperties {
+      if (mode == null) {
+        mode = Mode.STATIC;
+      }
+    }
+
+    static ThsProperties staticDefault() {
+      return new ThsProperties(Mode.STATIC, null, null);
+    }
+  }
 }

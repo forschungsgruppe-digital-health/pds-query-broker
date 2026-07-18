@@ -110,6 +110,7 @@ protected ProfileValidator profileValidator() {
 3. **Passwords:** never in YAML — inject via environment (`${TERMINOLOGY_KEYSTORE_PASSWORD}`) from the gitignored `docker/.env` (placeholders live in `.env.example`) or a secret store.
 4. **Hygiene:** if a certificate ever lands in git history, treat it as compromised — revoke/reissue via the SU-TermServ onboarding and rewrite history; a gitleaks pre-commit hook is recommended for this repo (as used elsewhere in the org).
 
+**Trusted third party — pseudonym resolution (feature toggle):** `pds.connector.ths.mode` selects how a connector resolves the pseudonym in a request back to a local id. `STATIC` (default) uses the synthetic pseudonym map (increment-1 stand-in). `DISPATCHER` resolves through the [fTTP FHIR dispatcher](https://github.com/forschungsgruppe-digital-health/fttp-fhir-dispatcher) — the project's re-implementation of the THS Greifswald TTP-FHIR gateway (gPAS `$dePseudonymize`); the same client works against the real THS gateway. Configure `pds.connector.ths.dispatcher-base-url` (e.g. `http://ttp-dispatcher:8080`) and `pds.connector.ths.target-domain` (the gPAS domain name). Start the optional dispatcher in the dev stack with `docker compose --profile ths up`. This is off by default, so nothing changes unless you opt in.
 
 ### Secret scanning (gitleaks)
 
