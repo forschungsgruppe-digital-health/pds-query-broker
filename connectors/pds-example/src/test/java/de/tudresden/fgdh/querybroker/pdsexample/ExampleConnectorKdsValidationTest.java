@@ -83,6 +83,7 @@ class ExampleConnectorKdsValidationTest {
             Map.of("PSN-EXAMPLE-0001", "internal-0001"),
             targetProfiles,
             CATALOG_DIR,
+            null,
             null),
         new SyntheticConditionStore());
   }

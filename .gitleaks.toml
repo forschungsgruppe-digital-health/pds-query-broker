@@ -1,0 +1,24 @@
+# gitleaks configuration — secret scanning for this repo.
+# Used by the pre-commit hook (.githooks/pre-commit) and CI (.github/workflows/gitleaks.yml).
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = """
+RabbitMQ dev-default password hash: a salted SHA-256 of the DOCUMENTED synthetic
+password 'broker' (see docker/.env.example, AGENTS.md). It is committed on purpose so
+the local dev stack boots without extra setup — RabbitMQ skips env-based default-user
+creation when a definitions file is loaded. This is a dev-only, non-production value.
+"""
+regexTarget = "match"
+regexes = ['''obLD1OqQUaZTIBscbf8vANAAwlz/gEZ9gk90wHiFK\+FWBadO''']
+paths = ['''docker/rabbitmq/definitions\.json''']
+
+[[allowlists]]
+description = "Synthetic test key material generated at test time is never real; belt-and-braces (these files are also gitignored)."
+paths = [
+  '''.*\.p12$''',
+  '''.*\.pfx$''',
+  '''.*\.jks$''',
+]

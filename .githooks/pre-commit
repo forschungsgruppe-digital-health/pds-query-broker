@@ -1,0 +1,23 @@
+#!/bin/sh
+# Secret-scanning pre-commit hook (gitleaks). Blocks commits that introduce secrets.
+# Activate once per clone:  git config core.hooksPath .githooks
+# Requires gitleaks on PATH:  brew install gitleaks   (or see https://github.com/gitleaks/gitleaks)
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks not found on PATH — install it (brew install gitleaks) or skip with 'git commit --no-verify'." >&2
+  exit 1
+fi
+
+# Scan only what is staged, against the repo config.
+gitleaks git --staged --no-banner --redact -c "$(git rev-parse --show-toplevel)/.gitleaks.toml"
+status=$?
+
+if [ "$status" -ne 0 ]; then
+  echo "" >&2
+  echo "pre-commit: gitleaks found a potential secret in your staged changes (see above)." >&2
+  echo "  - If it is a real secret: remove it, rotate it, and recommit." >&2
+  echo "  - If it is a documented false positive: allowlist it in .gitleaks.toml." >&2
+  exit 1
+fi
+
+exit 0

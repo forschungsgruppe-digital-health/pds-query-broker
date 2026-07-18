@@ -22,6 +22,6 @@ This ImplementationGuide defines the FHIR infrastructure profiles of the broker 
 
 ### Further documentation
 
-- [Architecture documentation (Arc42)](https://github.com/[org]/query-broker/blob/main/docs/ARCHITECTURE.md)
+- [Architecture documentation (Arc42)](https://github.com/[org]/query-broker/blob/main/docs/arc42/README.md)
 - [PDS integration guide](https://github.com/[org]/query-broker/blob/main/PDS_INTEGRATION.md)
 - [Contributing](https://github.com/[org]/query-broker/blob/main/CONTRIBUTING.md)

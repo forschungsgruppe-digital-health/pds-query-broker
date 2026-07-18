@@ -4,7 +4,7 @@
 
 This document describes the language-agnostic implementation path for PDS developers providing a connector for the Query Broker. It is independent of programming language, local data system, and pseudonymization infrastructure.
 
-> For further development of the broker, SDK, and message catalog, see [CONTRIBUTING.md](CONTRIBUTING.md). For the overall architecture, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+> For further development of the broker, SDK, and message catalog, see [CONTRIBUTING.md](CONTRIBUTING.md). For the overall architecture, see [the arc42 docs](docs/arc42/README.md).
 
 ---
 
@@ -425,5 +425,5 @@ When a new OperationDefinition appears in the catalog:
 | Provenance | [HL7 FHIR R4 Provenance](https://hl7.org/fhir/R4/provenance.html) |
 | AuditEvent | [HL7 FHIR R4 AuditEvent](https://hl7.org/fhir/R4/auditevent.html) |
 | FHIR Shorthand (FSH) | [FSH School](https://fshschool.org/) |
-| Overall architecture | [ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Overall architecture | [arc42 docs](docs/arc42/README.md) |
 | Broker/SDK development | [CONTRIBUTING.md](CONTRIBUTING.md) |
