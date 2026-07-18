@@ -118,12 +118,25 @@ The portable form is **Agent Skills** (`skills/<name>/SKILL.md`,
 [agentskills.io](https://agentskills.io) standard). `skills/` is the single source of truth; see
 `skills/SKILLS_SETUP.md` for the wiring.
 
-- **`arc42-docs`** — maintain `docs/ARCHITECTURE.md` (arc42 v9.0: structure, diagrams, ADRs,
-  quality scenarios)
+- **`arc42-generator`** — generate the arc42 v9.0 architecture docs from code (no speculation) OR
+  consolidate scattered docs into a split `docs/arc42/` (one file per section, novice+expert
+  readable), reusing `docs-auditor` as the before/after quality gate; migrates the legacy single-file
+  `docs/ARCHITECTURE.md`
 - **`architecture-dev`** — evolve the architecture (AMQP topology, FHIR messaging semantics,
   catalog design, ADRs) consistently across `specs/`, `docker/`, `ig/`, `docs/`
 - **`fhir-ig`** — FHIR R4 profiling with FSH/SUSHI (profiles, operation triples, examples,
   page content)
+- **`docs-auditor`** — audit ALL repo documentation against five bars (complete, consistent,
+  error-free vs. the live code/specs, understandable for novice+expert, usable), verify every
+  link/anchor, and return a report plus ready-to-apply fix suggestions. Read-only on the docs (writes
+  only its dated report under `docs/reports/`); reuses the specialist skills and is the gate
+  `arc42-generator` runs against
+- **`release-manager`** — set up (or change) CI-based release management; first run presents the
+  options (SemVer/CalVer, release-please/semantic-release/…) and scaffolds the choice + an ADR. This
+  repo is already release-please + SemVer, so it detects that and only offers adjustments
+- **`branching-strategist`** — set up (or change) a branching strategy; first run presents the options
+  (trunk-based/GitHub Flow/…) and scaffolds the choice + an ADR. This repo is already trunk-based, so
+  it detects that and only offers adjustments
 
 **How each tool accesses them:**
 
