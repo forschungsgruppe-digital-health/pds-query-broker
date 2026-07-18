@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class QueryBrokerServiceTest {
 
   private final QueryBrokerService service =
-      new QueryBrokerService(null, null, null, null, new BrokerProperties(null, 1000, null));
+      new QueryBrokerService(null, null, null, null, new BrokerProperties(null, 1000, null, null));
 
   @Test
   void allFatalResponsesAggregateAsFatalError() {

@@ -152,6 +152,42 @@ class WalkingSkeletonIntegrationTest {
   }
 
   @Test
+  void topicRoutingReachesOnlyAddressedSites() throws Exception {
+    // Probe queues bound to the topic exchange with each site's key — an
+    // independent, connector-agnostic view of what the exchange actually routes.
+    org.springframework.amqp.rabbit.core.RabbitAdmin admin =
+        brokerContext.getBean(org.springframework.amqp.rabbit.core.RabbitAdmin.class);
+    org.springframework.amqp.core.TopicExchange topic =
+        new org.springframework.amqp.core.TopicExchange("pds.topic", true, false);
+    String probeA = declareProbe(admin, topic, "probe.PDS-EXAMPLE", "pds.PDS-EXAMPLE.request");
+    String probeB = declareProbe(admin, topic, "probe.PDS-EXAMPLE-B", "pds.PDS-EXAMPLE-B.request");
+
+    // Address ONLY PDS-EXAMPLE.
+    postProcessMessage(request(pseudonym("PSN-EXAMPLE-0001", EXAMPLE_DOMAIN)), 200);
+
+    assertThat(admin.getQueueInfo(probeA).getMessageCount())
+        .as("the addressed site's routing key must receive the request")
+        .isEqualTo(1);
+    assertThat(admin.getQueueInfo(probeB).getMessageCount())
+        .as("an unaddressed site must receive NOTHING in topic mode (confidentiality)")
+        .isZero();
+  }
+
+  private static String declareProbe(
+      org.springframework.amqp.rabbit.core.RabbitAdmin admin,
+      org.springframework.amqp.core.TopicExchange topic,
+      String queueName,
+      String routingKey) {
+    org.springframework.amqp.core.Queue queue =
+        new org.springframework.amqp.core.Queue(queueName, false, false, true);
+    admin.declareQueue(queue);
+    admin.declareBinding(
+        org.springframework.amqp.core.BindingBuilder.bind(queue).to(topic).with(routingKey));
+    admin.purgeQueue(queueName, false);
+    return queueName;
+  }
+
+  @Test
   void aggregatesConditionsFromAddressedConnector() throws Exception {
     // Unique response queue so the routed-delivery assertion below cannot
     // be satisfied by another test's message.

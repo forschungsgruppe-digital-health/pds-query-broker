@@ -40,6 +40,15 @@
       "auto_delete": false,
       "internal": false,
       "arguments": {}
+    },
+    {
+      "name": "pds.topic",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
     }
   ],
   "queues": [
@@ -113,6 +122,22 @@
       "destination": "req.PDS-EXAMPLE-B",
       "destination_type": "queue",
       "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "pds.topic",
+      "vhost": "/",
+      "destination": "req.PDS-EXAMPLE",
+      "destination_type": "queue",
+      "routing_key": "pds.PDS-EXAMPLE.request",
+      "arguments": {}
+    },
+    {
+      "source": "pds.topic",
+      "vhost": "/",
+      "destination": "req.PDS-EXAMPLE-B",
+      "destination_type": "queue",
+      "routing_key": "pds.PDS-EXAMPLE-B.request",
       "arguments": {}
     }
   ]

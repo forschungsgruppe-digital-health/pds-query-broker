@@ -37,7 +37,9 @@
 ## ADR-006: Fanout Exchange to Start, Topic as the Target Architecture
 
 **Context:** Simple start vs. precise routing.
-**Decision:** Fanout for the prototype, Topic with `pds.{pdsId}.*` as the system grows.
+**Decision:** Fanout for the prototype, Topic with `pds.{pdsId}.*` as the system grows. 
+
+**Revision (2026-07, topic-exchange increment):** the topic routing is now implemented and the default. The broker derives the addressed sites from the pseudonym gPAS domains (`primaryDataSourceIdOf` = last path segment of the domain) and publishes each request only to those sites on the topic exchange `pds.topic` with routing key `pds.{pdsId}.request`; a connector binds its queue with `pds.{pdsId}.request` and receives only requests addressed to it. **Unaddressed sites receive nothing** — a confidentiality improvement over the fanout broadcast (pinned by an integration test). The migration is additive: connectors DUAL-bind their queue (fanout `pds.broadcast` AND topic `pds.topic`), self-filtering by gPAS domain remains as a safety net, and `broker.routing-mode` (`topic` default | `fanout`) selects the topology so either works during rollout. The AsyncAPI spec (`pds.topic` channel) and `docker/rabbitmq/definitions.json` were updated in lockstep. Not yet done (future refinement): per-site pseudonym filtering — today each addressed site still receives the full request bundle (all pseudonyms) and self-filters; sending each site only its own pseudonym would tighten confidentiality further.
 
 ## ADR-007: PascalCase Names for OperationDefinitions
 

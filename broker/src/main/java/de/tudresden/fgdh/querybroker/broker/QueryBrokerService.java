@@ -73,10 +73,13 @@ public class QueryBrokerService {
                     "Unknown operation (not in catalog): " + eventUri,
                     ErrorCode.UNSUPPORTED_OPERATION));
 
-    // Expected responders = distinct pseudonym domains (broadcast + self-filtering).
-    Set<String> domains = new LinkedHashSet<>();
-    BrokerMessages.pseudonymsOf(parameters).forEach(id -> domains.add(id.getSystem()));
-    if (domains.isEmpty()) {
+    // Expected responders = the distinct addressed sites, derived from the
+    // pseudonym domains (one primary data source per gPAS domain).
+    Set<String> addressedSites = new LinkedHashSet<>();
+    BrokerMessages.pseudonymsOf(parameters)
+        .forEach(id -> addressedSites.add(BrokerProtocol.primaryDataSourceIdOf(id.getSystem())));
+    addressedSites.remove("");
+    if (addressedSites.isEmpty()) {
       throw new BadRequestException("Request Parameters contain no pseudonym");
     }
 
@@ -85,21 +88,33 @@ public class QueryBrokerService {
     }
     String correlationId = requestHeader.getIdElement().getIdPart();
 
-    aggregator.expect(correlationId, domains.size());
-    publish(
-        BrokerProtocol.BROADCAST_EXCHANGE,
-        "",
-        requestBundle,
-        correlationId,
-        properties.replyQueue());
+    aggregator.expect(correlationId, addressedSites.size());
+    if (properties.routingMode() == BrokerProperties.RoutingMode.TOPIC) {
+      // Route only to the addressed sites; unaddressed sites never receive it.
+      for (String pdsId : addressedSites) {
+        publish(
+            BrokerProtocol.TOPIC_EXCHANGE,
+            BrokerProtocol.requestRoutingKey(pdsId),
+            requestBundle,
+            correlationId,
+            properties.replyQueue());
+      }
+    } else {
+      // Legacy: broadcast to all; connectors self-filter by gPAS domain.
+      publish(
+          BrokerProtocol.BROADCAST_EXCHANGE, "", requestBundle, correlationId,
+          properties.replyQueue());
+    }
     log.info(
-        "Published {} (correlationId={}, expecting {} response(s))",
+        "Published {} via {} (correlationId={}, addressing {} site(s): {})",
         eventUri,
+        properties.routingMode(),
         correlationId,
-        domains.size());
+        addressedSites.size(),
+        addressedSites);
 
     List<Bundle> responses = aggregator.await(correlationId, properties.aggregatorTimeoutMs());
-    Bundle aggregated = aggregate(requestHeader, domains.size(), responses);
+    Bundle aggregated = aggregate(requestHeader, addressedSites.size(), responses);
 
     String responseQueue = responseQueueOf(requestHeader);
     publish("", responseQueue, aggregated, correlationId, null);

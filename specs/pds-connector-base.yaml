@@ -23,11 +23,38 @@ servers:
 defaultContentType: application/fhir+json
 
 channels:
+  pds.topic:
+    address: 'pds.{pdsId}.request'
+    description: >
+      Topic exchange — the target routing topology (ADR-006 rev.). The broker
+      publishes each request only to the sites it addresses, with routing key
+      pds.{pdsId}.request; a connector for {pdsId} binds its request queue with
+      that key and therefore receives ONLY requests addressed to it. Unaddressed
+      sites receive nothing.
+    parameters:
+      pdsId:
+        description: Unique identifier of the addressed PDS site
+    messages:
+      fhirMessageBundle:
+        $ref: "#/components/messages/FhirMessageBundle"
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: pds.topic
+          type: topic
+          durable: true
+          autoDelete: false
+        bindingVersion: 0.3.0
+
   pds.broadcast:
     address: pds.broadcast
     description: >
-      Fanout exchange — the broker publishes request Bundles,
-      all bound PDS queues receive a copy.
+      Fanout exchange — the legacy broadcast topology (ADR-006). The broker
+      publishes request Bundles and all bound PDS queues receive a copy;
+      connectors self-filter by gPAS domain. Superseded by pds.topic but kept
+      for the additive migration (connectors dual-bind); still selectable via
+      the broker's routing-mode = fanout.
     messages:
       fhirMessageBundle:
         $ref: "#/components/messages/FhirMessageBundle"
@@ -44,7 +71,9 @@ channels:
   req.{pdsId}:
     address: req.{pdsId}
     description: >
-      PDS-specific request queue, bound to pds.broadcast. Each PDS connector
+      PDS-specific request queue. During the fanout→topic migration it is
+      DUAL-bound: to pds.broadcast (fanout, legacy) AND to pds.topic with
+      binding key pds.{pdsId}.request (topic, target). Each PDS connector
       consumes from its own queue. Declared durable with dead-letter exchange
       pds.dlq (unprocessable messages are rejected without requeue and
       dead-lettered).
@@ -107,12 +136,15 @@ operations:
   publishRequest:
     action: send
     channel:
-      $ref: "#/channels/pds.broadcast"
-    summary: Broker publishes the request Bundle to the fanout exchange.
+      $ref: "#/channels/pds.topic"
+    summary: Broker publishes the request Bundle to the addressed sites (topic exchange).
     description: >
-      AMQP properties set by the broker: correlation-id = request
-      MessageHeader.id; reply-to = the broker's response queue
-      (responses.broker); delivery mode persistent.
+      Target routing (ADR-006 rev.): the broker publishes the request once per
+      addressed site to pds.topic with routing key pds.{pdsId}.request. AMQP
+      properties: correlation-id = request MessageHeader.id; reply-to = the
+      broker's response queue (responses.broker); delivery mode persistent.
+      In legacy fanout mode the same message is instead published once to
+      pds.broadcast.
     bindings:
       amqp:
         deliveryMode: 2

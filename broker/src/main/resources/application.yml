@@ -13,6 +13,10 @@ broker:
   catalog-url: ${BROKER_CATALOG_URL:http://localhost:8090/fhir}
   aggregator-timeout-ms: ${BROKER_AGGREGATOR_TIMEOUT_MS:8000}
   reply-queue: responses.broker
+  # topic (default, ADR-006 rev.): route each request only to the addressed
+  # sites via pds.topic. fanout: legacy broadcast to pds.broadcast. Connectors
+  # dual-bind, so either works during migration.
+  routing-mode: ${BROKER_ROUTING_MODE:topic}
 
 server:
   port: 8080
