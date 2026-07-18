@@ -11,7 +11,10 @@
 
 - Skills are auto-discovered via `.claude/skills/` (symlinks into `skills/` — edit `skills/` only):
   `arc42-generator`, `architecture-dev`, `fhir-ig`, `docs-auditor`, `release-manager`,
-  `branching-strategist`.
+  `branching-strategist`, `security-reviewer`.
+- For an authorized security review use `security-reviewer` (read-only; STRIDE + checklist + triages
+  CodeQL/Trivy/Dependabot/gitleaks → a dated `docs/reports/` report + fixes; findings are leads a
+  human confirms). It complements the PR-time `security-review.yml` (claude-code-security-review).
 - To check documentation health (completeness, consistency, accuracy vs. the code, novice+expert
   readability, navigability) use `docs-auditor` — it returns a report plus ready-to-apply fixes and
   is read-only on the docs. `arc42-generator` runs it as the quality gate when generating/consolidating

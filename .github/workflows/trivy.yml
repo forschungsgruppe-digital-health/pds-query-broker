@@ -1,0 +1,64 @@
+name: Trivy
+
+# Container / IaC scanning. Dependency CVEs are covered by Dependabot + CodeQL; Trivy's
+# niche here is Dockerfile/compose misconfiguration and base-image CVEs.
+# Per project policy, full-image findings (incl. upstream bases) are INFORMATIONAL — they
+# upload to code scanning but never fail the build. Fixable first-party Dockerfile
+# misconfigurations are gated.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "31 5 * * 1" # weekly, Monday 05:31 UTC
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  config:
+    name: Misconfiguration (Dockerfile / compose / IaC)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Trivy config scan (SARIF, informational)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          format: sarif
+          output: trivy-config.sarif
+          exit-code: "0"
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3
+        with:
+          sarif_file: trivy-config.sarif
+          category: trivy-config
+
+  image:
+    name: Image CVEs (broker, informational)
+    # Building the image is heavy — only on main pushes and the weekly schedule, not PRs.
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Build broker image
+        run: docker build -f docker/broker/Dockerfile -t pds-broker:scan .
+      - name: Trivy image scan (SARIF, informational)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: pds-broker:scan
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-image.sarif
+          exit-code: "0"
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image

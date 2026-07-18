@@ -1,0 +1,53 @@
+name: AI Security Review
+
+# AI-assisted security review of PR diffs (Anthropic's official claude-code-security-review):
+# auth/authorization, data-exposure, injection, crypto — with false-positive filtering and
+# inline PR comments. See docs/reports/ for the persistent, skill-driven deep reviews.
+#
+# SAFETY:
+#   * Runs ONLY on same-repo PRs — the action is NOT hardened against prompt injection, so it
+#     must never run on untrusted fork PRs (which could also exfiltrate the API key).
+#   * Requires the ANTHROPIC_API_KEY repo secret. Without it the job WARNS and skips (no CI
+#     break) so the workflow is safe to merge before the secret is configured.
+#   * Findings are leads for human confirmation, not verdicts.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  security-review:
+    name: Claude security review
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for ANTHROPIC_API_KEY
+        id: check
+        env:
+          KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::ANTHROPIC_API_KEY secret is not set — skipping AI security review. Add it in Settings → Secrets to enable."
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        if: steps.check.outputs.has_key == 'true'
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code security review
+        if: steps.check.outputs.has_key == 'true'
+        uses: anthropics/claude-code-security-review@0c6a49f1fa56a1d472575da86a94dbc1edb78eda # main (no release tags yet)
+        with:
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          comment-pr: true
+          upload-results: true
+          custom-security-scan-instructions: .github/security-review-instructions.md
