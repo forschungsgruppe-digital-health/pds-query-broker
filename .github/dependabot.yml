@@ -36,6 +36,10 @@ updates:
     groups:
       docker:
         patterns: ["*"]
+    ignore:
+      # Java 21 is pinned (ADR-0010; Java 25 deferred — runtime JRE pinned by the base image).
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
 
   # ── GitHub Actions (keeps pinned SHAs / versions current across all workflows) ──────
   - package-ecosystem: "github-actions"
