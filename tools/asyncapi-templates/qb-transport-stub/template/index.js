@@ -22,6 +22,7 @@ function extractFacts(asyncapi) {
   };
 
   let broadcast = null;
+  let topic = null;
   let requestQueue = null;
   let responsesQueue = null;
   let dlq = null;
@@ -31,7 +32,11 @@ function extractFacts(asyncapi) {
     const amqp = amqpBindingOf(channel);
     if (!amqp) continue;
     if (amqp.is === 'routingKey' && amqp.exchange) {
-      broadcast = { address, ...amqp.exchange };
+      const exchange = { address, ...amqp.exchange };
+      // Distinguish the two routing topologies (ADR-006 rev.): the fanout
+      // broadcast (legacy) and the topic exchange (target, the broker default).
+      if (amqp.exchange.type === 'topic') topic = exchange;
+      else broadcast = exchange;
     } else if (amqp.is === 'queue') {
       const queue = { address, ...(amqp.queue || {}) };
       if (address.startsWith('req.')) requestQueue = queue;
@@ -40,8 +45,10 @@ function extractFacts(asyncapi) {
     }
   }
 
-  if (!broadcast) fail('no exchange-bound (broadcast) channel found');
+  if (!broadcast) fail('no fanout (broadcast) exchange channel found');
   if (broadcast.type !== 'fanout') fail(`broadcast exchange type ${broadcast.type}, expected fanout`);
+  if (!topic) fail('no topic exchange channel found');
+  if (topic.type !== 'topic') fail(`topic exchange type ${topic.type}, expected topic`);
   if (!requestQueue) fail('no req.{pdsId} queue channel found');
   if (!responsesQueue) fail('no responses.{systemId} queue channel found');
   if (!dlq) fail('no pds.dlq channel found');
@@ -64,6 +71,7 @@ function extractFacts(asyncapi) {
     version: asyncapi.info().version(),
     contentType,
     broadcast,
+    topic,
     requestQueue,
     responsesQueue,
     dlq,
@@ -82,6 +90,11 @@ BROADCAST_EXCHANGE = ${JSON.stringify(f.broadcast.name)}
 BROADCAST_EXCHANGE_TYPE = ${JSON.stringify(f.broadcast.type)}
 BROADCAST_EXCHANGE_DURABLE = ${f.broadcast.durable ? 'True' : 'False'}
 
+TOPIC_EXCHANGE = ${JSON.stringify(f.topic.name)}
+TOPIC_EXCHANGE_TYPE = ${JSON.stringify(f.topic.type)}
+TOPIC_EXCHANGE_DURABLE = ${f.topic.durable ? 'True' : 'False'}
+REQUEST_ROUTING_KEY_TEMPLATE = ${JSON.stringify(f.topic.address)}
+
 REQUEST_QUEUE_TEMPLATE = ${JSON.stringify(f.requestQueue.address)}
 REQUEST_QUEUE_DURABLE = ${f.requestQueue.durable ? 'True' : 'False'}
 RESPONSE_QUEUE_TEMPLATE = ${JSON.stringify(f.responsesQueue.address)}
@@ -95,6 +108,10 @@ DELIVERY_MODE_AGGREGATED_RESPONSE = ${f.deliveryModes.publishAggregatedResponse}
 
 def request_queue(pds_id: str) -> str:
     return REQUEST_QUEUE_TEMPLATE.replace("{pdsId}", pds_id)
+
+
+def request_routing_key(pds_id: str) -> str:
+    return REQUEST_ROUTING_KEY_TEMPLATE.replace("{pdsId}", pds_id)
 
 
 def response_queue(system_id: str) -> str:
@@ -116,6 +133,11 @@ public final class BrokerTransportSpec {
   public static final String BROADCAST_EXCHANGE_TYPE = ${JSON.stringify(f.broadcast.type)};
   public static final boolean BROADCAST_EXCHANGE_DURABLE = ${!!f.broadcast.durable};
 
+  public static final String TOPIC_EXCHANGE = ${JSON.stringify(f.topic.name)};
+  public static final String TOPIC_EXCHANGE_TYPE = ${JSON.stringify(f.topic.type)};
+  public static final boolean TOPIC_EXCHANGE_DURABLE = ${!!f.topic.durable};
+  public static final String REQUEST_ROUTING_KEY_TEMPLATE = ${JSON.stringify(f.topic.address)};
+
   public static final String REQUEST_QUEUE_TEMPLATE = ${JSON.stringify(f.requestQueue.address)};
   public static final boolean REQUEST_QUEUE_DURABLE = ${!!f.requestQueue.durable};
   public static final String RESPONSE_QUEUE_TEMPLATE = ${JSON.stringify(f.responsesQueue.address)};
@@ -128,6 +150,10 @@ public final class BrokerTransportSpec {
 
   public static String requestQueue(String pdsId) {
     return REQUEST_QUEUE_TEMPLATE.replace("{pdsId}", pdsId);
+  }
+
+  public static String requestRoutingKey(String pdsId) {
+    return REQUEST_ROUTING_KEY_TEMPLATE.replace("{pdsId}", pdsId);
   }
 
   public static String responseQueue(String systemId) {

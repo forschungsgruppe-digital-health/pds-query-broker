@@ -76,13 +76,11 @@ jobs:
 
       - name: Start broker stack (RabbitMQ, catalog + seed, broker)
         working-directory: docker
-        env:
-          # The Python mock connector binds the fanout broadcast exchange, so run the
-          # broker in fanout mode here to exercise that wire contract. The topic default
-          # (ADR-006 rev.) is covered by the Java WalkingSkeletonIntegrationTest.
-          BROKER_ROUTING_MODE: fanout
         run: |
           cp .env.example .env
+          # Broker runs in its DEFAULT topic routing mode (ADR-006 rev.); the mock
+          # connector dual-binds its queue to the topic exchange (pds.{pdsId}.request),
+          # so it receives the request addressed to it — exercising the production path.
           docker compose up -d --wait broker
 
       - name: Run Python contract test
