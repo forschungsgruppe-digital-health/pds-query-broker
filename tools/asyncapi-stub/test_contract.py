@@ -205,11 +205,19 @@ class MockPrimaryDataSourceConnector(threading.Thread):
                 )
             )
             channel = connection.channel()
-            # Topology exactly as the spec's AMQP bindings describe it.
+            # Topology exactly as the spec's AMQP bindings describe it: the request
+            # queue is DUAL-bound (spec req.{pdsId}) — to the fanout broadcast
+            # (legacy) AND to the topic exchange with routing key pds.{pdsId}.request
+            # (the broker's default routing, ADR-006 rev.), so it receives in either mode.
             channel.exchange_declare(
                 exchange=self.stub.BROADCAST_EXCHANGE,
                 exchange_type=self.stub.BROADCAST_EXCHANGE_TYPE,
                 durable=self.stub.BROADCAST_EXCHANGE_DURABLE,
+            )
+            channel.exchange_declare(
+                exchange=self.stub.TOPIC_EXCHANGE,
+                exchange_type=self.stub.TOPIC_EXCHANGE_TYPE,
+                durable=self.stub.TOPIC_EXCHANGE_DURABLE,
             )
             channel.queue_declare(
                 queue=self.queue,
@@ -217,6 +225,11 @@ class MockPrimaryDataSourceConnector(threading.Thread):
                 arguments={"x-dead-letter-exchange": self.stub.DEAD_LETTER_QUEUE},
             )
             channel.queue_bind(queue=self.queue, exchange=self.stub.BROADCAST_EXCHANGE)
+            channel.queue_bind(
+                queue=self.queue,
+                exchange=self.stub.TOPIC_EXCHANGE,
+                routing_key=self.stub.request_routing_key(PRIMARY_DATA_SOURCE_ID),
+            )
             self.ready.set()
 
             for method, properties, body in channel.consume(
@@ -252,7 +265,12 @@ class MockPrimaryDataSourceConnector(threading.Thread):
 def test_spec_declares_the_expected_protocol_surface(stub):
     assert stub.CONTENT_TYPE == "application/fhir+json"
     assert stub.BROADCAST_EXCHANGE_TYPE == "fanout"
+    assert stub.TOPIC_EXCHANGE_TYPE == "topic"
     assert stub.request_queue(PRIMARY_DATA_SOURCE_ID) == f"req.{PRIMARY_DATA_SOURCE_ID}"
+    assert (
+        stub.request_routing_key(PRIMARY_DATA_SOURCE_ID)
+        == f"pds.{PRIMARY_DATA_SOURCE_ID}.request"
+    )
     assert stub.response_queue(SYSTEM_ID) == f"responses.{SYSTEM_ID}"
 
 

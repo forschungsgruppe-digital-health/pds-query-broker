@@ -24,6 +24,12 @@ public final class JavaStubCheck {
         BrokerTransportSpec.BROADCAST_EXCHANGE,
         BrokerProtocol.BROADCAST_EXCHANGE);
     check("broadcast exchange type", BrokerTransportSpec.BROADCAST_EXCHANGE_TYPE, "fanout");
+    check("topic exchange", BrokerTransportSpec.TOPIC_EXCHANGE, BrokerProtocol.TOPIC_EXCHANGE);
+    check("topic exchange type", BrokerTransportSpec.TOPIC_EXCHANGE_TYPE, "topic");
+    check(
+        "request routing key for PDS-X",
+        BrokerTransportSpec.requestRoutingKey("PDS-X"),
+        BrokerProtocol.requestRoutingKey("PDS-X"));
     check(
         "request queue for PDS-X",
         BrokerTransportSpec.requestQueue("PDS-X"),
