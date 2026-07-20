@@ -8,6 +8,13 @@ From v0.2.0 onward, releases and changelog entries are generated automatically b
 Entries up to and including v0.2.0 were written manually following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.1](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.10.0...v0.10.1) (2026-07-20)
+
+
+### Documentation
+
+* **arc42:** reconcile architecture docs with the current implementation ([#47](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/47)) ([551afa1](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/551afa1c105fc359782f92368fe0eb7985ff069a))
+
 ## [0.10.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.9.0...v0.10.0) (2026-07-20)
 
 
