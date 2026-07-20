@@ -8,6 +8,13 @@ From v0.2.0 onward, releases and changelog entries are generated automatically b
 Entries up to and including v0.2.0 were written manually following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.9.0...v0.10.0) (2026-07-20)
+
+
+### Features
+
+* **broker:** per-site pseudonym filtering in topic routing (ADR-006 rev.) ([#45](https://github.com/forschungsgruppe-digital-health/pds-query-broker/issues/45)) ([caa719e](https://github.com/forschungsgruppe-digital-health/pds-query-broker/commit/caa719edc2cf40998765d92f189da4d8c5de9d71))
+
 ## [0.9.0](https://github.com/forschungsgruppe-digital-health/pds-query-broker/compare/v0.8.0...v0.9.0) (2026-07-18)
 
 
