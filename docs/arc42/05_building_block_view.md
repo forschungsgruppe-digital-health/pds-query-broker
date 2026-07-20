@@ -9,7 +9,7 @@
 ```mermaid
 graph TB
     subgraph "Query Broker System"
-        BFF["BFF"]
+        BFF["BFF<br/><i>(planned)</i>"]
         BROKER["Query Broker Service"]
         MQ[("RabbitMQ")]
         CATALOG[("Message catalog")]
@@ -28,12 +28,12 @@ graph TB
 
 | Building block | Responsibility | Interfaces | Technology |
 |----------|-------------------|----------------|-------------|
-| **BFF** | Session, PSN lookup, response shaping | REST ← portal, REST → broker, REST → THS | Spring Boot, HAPI FHIR |
-| **Query Broker Service** | Validation (MessageDefinition), routing (CapabilityStatement), fan-out, aggregation, profile validation. Creates `AuditEvent` resources for request receipt, fan-out, aggregation, and response dispatch. Creates `Provenance` for the aggregation step. | AMQP → RabbitMQ, FHIR REST → catalog, REST → connector `/metadata` | Spring Boot, Spring AMQP, HAPI FHIR |
+| **BFF** *(planned — ADR-011; not in this codebase)* | Session, PSN lookup, response shaping | REST ← portal, REST → broker, REST → THS | Spring Boot, HAPI FHIR |
+| **Query Broker Service** | Validation (MessageDefinition), routing (by pseudonym gPAS-domain → PDS id), fan-out, aggregation. *(Planned per ADR-004/ADR-008, not yet implemented at runtime: CapabilityStatement-based routing, broker-side profile validation, and `AuditEvent`/`Provenance` emission — the BrokerAuditEvent/BrokerProvenance profiles exist in the catalog but are never instantiated.)* | AMQP → RabbitMQ, FHIR REST → catalog | Spring Boot, Spring AMQP, HAPI FHIR |
 | **RabbitMQ** | Message transport (fanout/topic), queue isolation, DLQ | AMQP 0-9-1 | RabbitMQ 3.12+, AsyncAPI 3.0 |
 | **Message catalog** | OperationDefinition, MessageDefinition, GraphDefinition, project-specific profiles | FHIR REST API | HAPI FHIR Server, FHIR profile packages |
-| **PDS Connector** | Self-filtering, capability check, dispatch, adapter, profile validation before dispatch. Creates `Provenance` per business resource (origin: PDS, source system) and `AuditEvent` for query execution and validation result. | AMQP ← RabbitMQ, REST `/metadata`, REST → local THS | Connector SDK (generated from AsyncAPI), Spring Boot, HAPI FHIR |
-| **Fed. THS** | Pseudonym resolution across PDS boundaries | REST API (E-PIX) | MOSAiC E-PIX, gPAS |
+| **PDS Connector** | Self-filtering, capability check, dispatch, adapter, profile validation before dispatch. *(Planned per ADR-008, not yet implemented in the SDK: `Provenance`/`AuditEvent` emission.)* | AMQP ← RabbitMQ, REST → local THS | Connector SDK (hand-written; contract-checked against the AsyncAPI spec), Spring Boot, HAPI FHIR |
+| **Fed. THS** *(planned — not yet built)* | Cross-PDS pseudonym resolution (target architecture) | *Planned:* federated E-PIX. Current THS path is per-site: gPAS `$dePseudonymize` (dispatcher) or a static map. | MOSAiC E-PIX, gPAS |
 
 ## 5.2 Level 2 — Message Catalog (Whitebox)
 
@@ -67,7 +67,7 @@ graph LR
 
 ```mermaid
 graph TB
-    subgraph "Generated stub"
+    subgraph "Connector SDK (base class)"
         ABS["AbstractPrimaryDataSourceConnector<br/><i>AMQP listener · pseudonym filter<br/>capability check · profile validation</i>"]
     end
     subgraph "PDS developer"
@@ -87,6 +87,6 @@ graph TB
 
 | Building block | Responsibility | Technology |
 |----------|-------------------|-------------|
-| **AbstractPrimaryDataSourceConnector** | FHIR message parsing, gPAS domain filtering, capability check, `targetProfile` validation, `Provenance` creation per resource, `AuditEvent` creation for query and validation | Connector SDK (generated), HAPI FHIR Validator |
+| **AbstractPrimaryDataSourceConnector** | FHIR message parsing, gPAS domain filtering, capability check, `targetProfile` validation. *(Planned per ADR-008, not yet implemented: `Provenance`/`AuditEvent` creation.)* | Connector SDK (hand-written; contract-checked against the AsyncAPI spec), HAPI FHIR Validator |
 | **OperationHandler** | Interface: `Bundle execute(String pseudonym, Parameters params)` | `@FunctionalInterface` |
-| **Concrete handler** | Adapter: local system → FHIR (profile-conformant if `targetProfile` is declared). Sets `Resource.meta.source` to the connector URL. | Provided by the PDS developer, HAPI FHIR |
+| **Concrete handler** | Adapter: local system → FHIR (profile-conformant if `targetProfile` is declared). *(Per ADR-008 a handler should set `Resource.meta.source` to the connector URL; the reference connector does not yet do this.)* | Provided by the PDS developer, HAPI FHIR |

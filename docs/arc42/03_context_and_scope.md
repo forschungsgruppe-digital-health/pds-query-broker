@@ -19,7 +19,8 @@ graph LR
     PORTAL -->|"Operation invocation"| BROKER
     BROKER -->|"FHIR Message"| PDS_A
     BROKER -->|"FHIR Message"| PDS_B
-    BROKER -->|"PSN lookup"| THS
+    PDS_A -->|"PSN → local ID"| THS
+    PDS_B -->|"PSN → local ID"| THS
     PDS_A -->|"FHIR Response"| BROKER
     PDS_B -->|"FHIR Response"| BROKER
     BROKER -->|"Aggregated Bundle"| PORTAL
@@ -28,9 +29,9 @@ graph LR
 
 | External partner | Interface | Format |
 |------------------|---------------|--------|
-| Patient portal | REST (BFF API) | JSON (FHIR-based) |
+| Patient portal (via BFF — planned, portal-side; today the broker's `$process-message` is the ingress) | REST (BFF API) | JSON (FHIR-based) |
 | PDS connectors | AMQP (RabbitMQ) | FHIR Message Bundle (`application/fhir+json`) |
-| Federated THS | REST (E-PIX API) | E-PIX-specific |
+| Federated THS (gPAS) | FHIR REST (TTP-FHIR gateway, `$dePseudonymize`) | FHIR R4 Parameters (`application/fhir+json`) |
 | Message catalog | FHIR REST API | FHIR R4 (OperationDefinition, MessageDefinition, GraphDefinition) |
 
 ## 3.2 Technical Context
@@ -38,14 +39,14 @@ graph LR
 ```mermaid
 graph TB
     subgraph "Integration layer"
-        BFF["BFF<br/><i>Spring Boot</i>"]
+        BFF["BFF<br/><i>planned — portal-side, ADR-011</i>"]
         BROKER["Query Broker<br/><i>Spring Boot · Spring AMQP</i>"]
         MQ[("RabbitMQ<br/><i>AMQP 0-9-1</i>")]
     end
 
     subgraph "Message catalog"
         CATALOG[("HAPI FHIR Server")]
-        OPDEF["OperationDefinition<br/><i>GetConditions etc.</i>"]
+        OPDEF["OperationDefinition<br/><i>GetConditions (only op so far)</i>"]
         MSGDEF["MessageDefinition"]
         GRAPHDEF["GraphDefinition"]
         KDS["Project profiles"]
@@ -57,18 +58,15 @@ graph TB
 
     subgraph "PDS site"
         CONN["Connector<br/><i>Connector SDK</i>"]
-        CAPSTMT["CapabilityStatement<br/><i>.messaging.supportedMessage</i>"]
         LTHS["gPAS"]
         SRC[("i2b2 / OMOP / SQL")]
     end
 
     BFF -->|"FHIR Message Bundle"| BROKER
     BROKER -->|"FHIR REST"| CATALOG
-    BROKER -->|"GET /metadata"| CAPSTMT
     BROKER -->|"Publish"| MQ
     MQ -->|"Per-site (topic)"| CONN
     CONN -->|"Response"| MQ
     CONN --> LTHS --> SRC
     CONN -->|"FHIR REST"| CATALOG
-    CAPSTMT -->|"supportedMessage"| MSGDEF
 ```

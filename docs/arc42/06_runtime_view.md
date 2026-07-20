@@ -22,14 +22,14 @@ sequenceDiagram
     THS-->>B: {PDS-A: PSN-A-8x3k, PDS-B: PSN-B-m9zq}
     B->>QB: FHIR Message (eventUri: .../GetConditions)
 
-    Note over QB: AuditEvent: request received
+    Note over QB: (planned — ADR-008: AuditEvent on request receipt, not yet emitted)
 
-    QB->>CAT: GET /MessageDefinition/GetConditionsRequest
-    CAT-->>QB: MessageDefinition + OperationDefinition
+    QB->>CAT: GET /OperationDefinition?url=.../GetConditions
+    CAT-->>QB: searchset Bundle (OperationDefinition)
 
     QB->>MQ: Publish pds.topic (key pds.PDS-A.request)
     QB->>MQ: Publish pds.topic (key pds.PDS-B.request)
-    Note over QB: AuditEvent: fan-out to 2 PDS<br/>(each request trimmed to that site's pseudonym)
+    Note over QB: Fan-out to 2 PDS (each request trimmed to that site's pseudonym)<br/>(planned — ADR-008: AuditEvent, not yet emitted)
 
     par Topic routing — each site receives ONLY its own pseudonym
         MQ->>CA: FHIR Message Bundle (PSN-A only)
@@ -37,23 +37,25 @@ sequenceDiagram
     end
 
     CA->>CA: gPAS domain PDS-A ✓ (self-filter, defense-in-depth) → handler
-    Note over CA: AuditEvent: query start (OMOP CDM)
-    CA->>CA: DB query → FHIR Conditions
-    Note over CA: Create Provenance per Condition<br/>(agent=PDS-A, source=OMOP)
+    Note over CA: Query start (synthetic store — reference connector)<br/>(planned — ADR-008: AuditEvent, not yet emitted)
+    CA->>CA: Synthetic store lookup → FHIR Conditions
+    Note over CA: (planned — ADR-008: Provenance per Condition, source=PDS-A local store, not yet created)
     CA->>CA: Profile validation ✓
-    Note over CA: AuditEvent: validation passed
-    CA-->>MQ: Response (Conditions + Provenances + AuditEvents)
+    Note over CA: Profile validation ✓ (planned — ADR-008: AuditEvent, not yet emitted)
+    CA-->>MQ: Response (Conditions)
 
     CB->>CB: gPAS domain PDS-B ✓ → handler
-    CB-->>MQ: Response (Conditions + Provenances + AuditEvents)
+    CB-->>MQ: Response (Conditions)
 
     MQ-->>QB: 2 responses
-    QB->>QB: Aggregation + GraphDefinition check
-    Note over QB: AuditEvent: aggregation (2/2 complete)<br/>Provenance: aggregation step
-    QB-->>B: Aggregated Bundle<br/>(Conditions + all Provenances + all AuditEvents)
+    QB->>QB: Aggregation (collect result resources; derive response code)
+    Note over QB: (planned — ADR-008: AuditEvent + Provenance for the aggregation step, not yet emitted)
+    QB-->>B: Aggregated Bundle (Conditions; OperationOutcome on partial/total failure)
     B-->>P: JSON
 ```
 
+> **Note:** The Portal, BFF and federated-THS pseudonym-resolution hops (P/B/THS) are upstream components not yet built in this repository; the broker's real entry point is `POST /fhir/$process-message` with the site pseudonyms already resolved into the request Parameters (see §5 / ADR-011/012).
+
 ## 6.2 Scenario: PDS Does Not Support an Operation
 
-The connector responds with `MessageHeader.response.code = fatal-error` and an `OperationOutcome` resource (`issue.code = not-supported`). The aggregator counts this response as complete but excludes it from the result Bundle.
+If a PDS connector receives an operation it does not support, it stays silent — it publishes no response at all (`handle()` returns empty; see [§5 Building Blocks](05_building_block_view.md)). The aggregator waits until its timeout, then completes the query: if any other site answered, the aggregated Bundle carries an `OperationOutcome` (severity `warning`) noting that N of M addressed sites did not respond; if no site answered, the aggregated `MessageHeader` is `fatal-error`. (A request for an operation that is not in the catalog at all is instead rejected synchronously by the broker at ingress with an `OperationOutcome`, `issue.code = not-supported`.)

@@ -1,6 +1,6 @@
 # Architecture Documentation — Query Broker (arc42)
 
-> Version 0.2.0 · 2026-05-04 · Structured according to the [arc42](https://arc42.org/) template v9.0 (July 2025). Not all sections are filled in at the current project stage.
+> Version 0.10.0 · 2026-07-20 · Structured according to the [arc42](https://arc42.org/) template v9.0 (July 2025). Not all sections are filled in at the current project stage.
 > Split into one file per arc42 section. This index is the single version+date source.
 
 > **New here?** Start with [about-arc42.md](about-arc42.md) (what arc42 is and how to read this), then
