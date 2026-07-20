@@ -7,7 +7,7 @@
 ```mermaid
 graph TB
     subgraph "Central infrastructure"
-        BFF_NODE["BFF container"]
+        BFF_NODE["BFF container<br/><i>(planned — not yet built)</i>"]
         BROKER_NODE["Broker container"]
         MQ_NODE["RabbitMQ container"]
         CAT_NODE["HAPI FHIR catalog"]
@@ -34,3 +34,5 @@ graph TB
 ```
 
 > PDS connectors establish **outbound** AMQP connections to the central RabbitMQ — no inbound connections into PDS networks are needed. This considerably simplifies firewall configuration in hospital networks.
+
+> The BFF is the planned central entry point for the patient portal; it is not yet implemented. Today the broker exposes the front-facing HTTP ingress directly (`POST /fhir/$process-message`).

@@ -308,7 +308,7 @@ public Map<String, OperationHandler> getHandlers() {
 |-------|----------------|
 | `AbstractPrimaryDataSourceConnector` | FHIR message parsing, pseudonym filtering, dispatch, profile validation |
 | `OperationHandler` | `Bundle execute(String pseudonym, Parameters params)` |
-| `FhirProfileValidator` | Validation against configured StructureDefinitions + GraphDefinition |
+| `CatalogProfileValidator` (SDK `ProfileValidator`) | Validation against configured StructureDefinitions + GraphDefinition |
 | `CapabilityStatementGenerator` | Generates a CapabilityStatement from the handler map |
 
 > FHIR profile packages are included as dependencies in the SDK — which packages depends on the project context.

@@ -11,7 +11,8 @@
 | Data in PDS not stored as FHIR | PDS data systems are heterogeneous (i2b2, OMOP CDM, SQL, HL7 v2). Connectors must translate as adapters. |
 | Pseudonymization via MOSAiC | Patient identities are resolved via the federated trusted third party (THS) (E-PIX/gPAS). Each PDS has its own gPAS domain. |
 | FHIR R4 as the canonical format | All outputs are FHIR R4, optionally profiled according to project-specific StructureDefinitions. |
-| Security deprioritized | Data protection/authorization are currently out of scope. |
+| Authorization deferred | End-to-end authentication/authorization is out of scope for the walking-skeleton pilot and staged to a future security ADR (ADR-011 'Security staging'); the broker's `$process-message` ingress is currently compose-internal and unauthenticated. |
+| Data protection by design (active) | Messages carry pseudonyms only (never real identities); in topic mode the broker trims each request to the site's own pseudonym (per-site filtering, ADR-006 rev.) with connector self-filtering as defense-in-depth; the remote terminology client supports mTLS (ADR-013). |
 
 ## 2.2 Organizational Constraints
 

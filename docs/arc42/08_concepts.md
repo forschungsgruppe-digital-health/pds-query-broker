@@ -54,7 +54,7 @@ Profile binding is optional and project-specific. If a `targetProfile` is declar
 | MessageDefinition (Response) | `focus[].profile` | Declares the profile for resources in the response message |
 | GraphDefinition | `link[].target[].profile` | Declares profiles for linked resources in the response graph |
 
-Validation takes place in the generated connector stub before dispatch (HAPI FHIR Validator + profile packages as a dependency) and optionally in the broker on receipt. Operations without `targetProfile` skip validation — the handler returns base FHIR resources.
+Validation takes place in the connector (SDK base class) before dispatch (HAPI FHIR Validator + profile packages as a dependency) and optionally in the broker on receipt. Operations without `targetProfile` skip validation — the handler returns base FHIR resources.
 
 > The profiles themselves are configurable per project: MII KDS in the MII context, US Core for US projects, IPS for international scenarios, or custom project profiles. They are installed in the catalog server as FHIR packages (NPM format) and included in the Connector SDK as a dependency.
 
@@ -70,7 +70,7 @@ OperationDefinition names follow the FHIR naming scheme (constraint opd-0, regex
 
 ## 8.4 Capability Discovery
 
-Each connector publishes a `CapabilityStatement` at `GET /metadata` with `messaging.supportedMessage` entries pointing to MessageDefinition URLs. The broker queries these at startup and builds its routing directory dynamically (cf. [FHIR R4 CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html)).
+The broker validates each request's operation against a catalog HAPI FHIR server, resolving the `MessageHeader.eventUri` via `GET {catalog}/OperationDefinition?url=…` (lazy, cached — `MessageDefinitionRegistry`). It does not query connectors for CapabilityStatements. Site routing is derived by convention from each pseudonym's gPAS domain system (last path segment → `pdsId`) and, in topic mode, published with routing key `pds.{pdsId}.request`. (CapabilityStatement-based dynamic discovery — `GET /metadata` → `messaging.supportedMessage`, cf. [FHIR R4 CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html) — is a planned future concept, not yet implemented.)
 
 ## 8.5 Conformance Assurance
 
@@ -81,6 +81,8 @@ Three dimensions: structural (profile validation), semantic (test data + CodeSys
 Errors are transmitted as FHIR `OperationOutcome`. `MessageHeader.response.code` signals `ok`, `transient-error`, or `fatal-error` (cf. [FHIR R4 OperationOutcome](https://hl7.org/fhir/R4/operationoutcome.html)).
 
 ## 8.7 Data Provenance and Processing Log
+
+> **Status:** the Provenance/AuditEvent profiles exist in the catalog (BrokerProvenance, BrokerAuditEvent, BrokerProvenanceActivityVS); runtime emission by the connectors and broker (and setting `Resource.meta.source`) is a planned concept (ADR-008) and not yet wired in code.
 
 Two FHIR resources cover proof of origin and logging — without proprietary mechanisms:
 
@@ -146,7 +148,7 @@ Multiple requesting systems (portal, CDSS, research portal) can submit requests 
 | Level | Mechanism | Responsibility |
 |-------|-------------|---------------|
 | FHIR | `MessageHeader.destination.endpoint` in the request → response queue URI | Requesting system sets it, broker evaluates it |
-| AMQP | `replyTo` header in the request → response queue name | BFF/client sets it, broker publishes to it |
+| AMQP | aggregated response published to the named `responses.{system}` queue via the default exchange (routing key = queue name) | Broker derives the queue from `destination.endpoint`; the request-level `replyTo` is a separate internal request→connector→broker channel (broker sets it to its own `responses.broker`), not client-facing routing |
 | Fallback | Requests without `destination` → `responses.default` | Broker uses the default queue |
 
-Each requesting system gets its own response queue (e.g. `responses.portal`, `responses.cdss`). The ResponseAggregator correlates the connector responses via `MessageHeader.response.identifier` and publishes the aggregated Bundle to the queue from `destination.endpoint`.
+Each requesting system gets its own response queue (e.g. `responses.portal`, `responses.cdss`). The ResponseAggregator correlates the connector responses via the AMQP `correlationId` (set to the request's `MessageHeader.id`); once complete or timed out, the QueryBrokerService publishes the aggregated Bundle to the queue derived from `MessageHeader.destination.endpoint`.

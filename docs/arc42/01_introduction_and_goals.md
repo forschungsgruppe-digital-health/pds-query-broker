@@ -16,13 +16,13 @@ The Query Broker distributes data requests from a patient portal (and potential 
 | 2 | **Extensibility** | A new operation can be added by creating FHIR resources in the catalog — without rebuilding existing connectors. |
 | 3 | **Decoupling** | A new PDS site is onboarded by deploying a connector and setting up a RabbitMQ queue — without changing the broker. |
 | 4 | **Fault tolerance** | The broker delivers partial results with `OperationOutcome` when individual PDS do not respond. |
-| 5 | **Traceability** | Every resource in the aggregated Bundle carries its origin (PDS, source system) and a processing log (validation, aggregation). |
+| 5 | **Traceability** | *(target)* Each aggregated resource is to carry provenance of its origin (PDS, source system) via the BrokerProvenance profile and a processing log. Currently the aggregated Bundle records the origin at the message level (broker MessageHeader) and reports incomplete aggregation via `OperationOutcome`; per-resource Provenance/AuditEvent is not yet emitted. |
 
 ## 1.3 Stakeholders
 
 | Role | Expectation |
 |-------|-----------|
-| PDS developers | Clear connector interface, SDK with generated stub, conformance tests |
+| PDS developers | Clear connector interface, SDK with an abstract connector base class to extend, conformance tests |
 | Project core developers | Extensible architecture, standards-based, maintainable |
 | Patient portal team | Stable BFF API, FHIR-conformant responses |
 | Data protection officers | Pseudonymized data processing, no central data store |

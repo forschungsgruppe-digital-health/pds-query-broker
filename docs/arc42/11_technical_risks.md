@@ -7,6 +7,6 @@
 | Risk | Impact | Mitigation |
 |--------|------------|----------|
 | The configured profiles change | Handler output becomes invalid | Pin profile versions in the catalog, re-certification on update |
-| AsyncAPI `allOf` tooling gaps | Stub generation fragile when the spec is extended | Keep the AsyncAPI spec minimal (transport only), semantics in FHIR |
+| AsyncAPI schema tooling gaps (e.g. `allOf`) | Stub generation could become fragile *if* the spec is extended with composed schemas | Keep the AsyncAPI spec minimal (transport only); semantics stay in FHIR. The current spec uses no `allOf`. |
 | No authorization implemented | Third-party applications could access arbitrary data | Define SMART on FHIR scopes before production use |
-| Fanout scaling | With 50+ PDS: every connector receives every message | Migrate to a Topic Exchange with `pds.{pdsId}.*` |
+| Fanout scaling with many sites | In the legacy fanout mode every connector receives every message | **Resolved (ADR-006 rev.):** the topic exchange `pds.topic` with routing key `pds.{pdsId}.request` is now the default (`broker.routing-mode=topic`) — each request reaches only addressed sites, with per-site pseudonym trimming. Fanout remains a selectable fallback for rollout. |
