@@ -14,8 +14,10 @@ architecture; prefer precise, mechanism-level findings over generic advice.
   `responses.{systemId}` isolation).
 - **Pseudonym / PII handling** — pseudonyms or re-identifying data leaking into logs, error
   messages, `OperationOutcome`, `AuditEvent` detail, or across site boundaries; each addressed
-  site should not receive other sites' pseudonyms (see ADR-006 revision — per-site pseudonym
-  filtering is a known follow-up).
+  site must not receive other sites' pseudonyms — the broker trims each topic-mode request to the
+  site's own pseudonym(s) (ADR-006 rev., `BrokerMessages.requestBundleForSite`). Verify no
+  cross-site pseudonym in a published bundle (legacy fanout mode still broadcasts all pseudonyms —
+  connector self-filtering is the safety net there).
 - **THS / gPAS integration** — SSRF or injection via `dispatcher-base-url` / `target-domain`;
   trusting unauthenticated de-pseudonymization responses; TLS/mTLS verification on the terminology
   and THS clients (certs must never be logged or committed).

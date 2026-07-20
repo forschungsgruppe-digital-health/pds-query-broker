@@ -19,9 +19,14 @@ import org.slf4j.LoggerFactory;
 /**
  * Base class for primary-data-source (PDS — <i>Primärdatenquelle</i>)
  * connectors: parses request message bundles, self-filters by pseudonymization
- * domain (broadcast + self-filtering, ADR-006), dispatches to the registered
- * {@link OperationHandler}, and assembles the response message bundle (profile
- * BrokerResponseBundle).
+ * domain, dispatches to the registered {@link OperationHandler}, and assembles
+ * the response message bundle (profile BrokerResponseBundle).
+ *
+ * <p>Self-filtering by gPAS domain is defense-in-depth (ADR-006 rev.): in the
+ * default topic mode the broker already trims each request to the site's own
+ * pseudonym(s), so the self-filter is a no-op passthrough; in the legacy fanout
+ * mode, where every connector receives the full broadcast bundle, it is the
+ * mechanism that keeps a connector from acting on another site's pseudonym.
  *
  * <p>Self-filtering contract: a connector that is not addressed (no pseudonym
  * of its gPAS domain) or does not support the requested operation stays

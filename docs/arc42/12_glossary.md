@@ -23,5 +23,5 @@
 | **Partial result** | Aggregated result when individual PDS time out; contains `OperationOutcome` |
 | **Provenance** | FHIR resource; documents the origin of a resource — who (agent), when, from which source (entity) |
 | **AuditEvent** | FHIR resource; documents a processing step — action, period, outcome, systems involved |
-| **Self-filtering** | The connector decides autonomously whether it processes a broadcast message |
+| **Self-filtering** | Defense-in-depth: the connector independently checks a request carries a pseudonym of its own gPAS domain before processing. Primary isolation is the broker's per-site topic routing (ADR-006 rev.); self-filtering is the safety net, and the isolation mechanism in legacy fanout mode |
 | **THS** | Trusted third party (German: Treuhandstelle) — mediates between pseudonyms and identities |

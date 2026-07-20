@@ -27,15 +27,16 @@ sequenceDiagram
     QB->>CAT: GET /MessageDefinition/GetConditionsRequest
     CAT-->>QB: MessageDefinition + OperationDefinition
 
-    QB->>MQ: Publish pds.broadcast
-    Note over QB: AuditEvent: fan-out to 2 PDS
+    QB->>MQ: Publish pds.topic (key pds.PDS-A.request)
+    QB->>MQ: Publish pds.topic (key pds.PDS-B.request)
+    Note over QB: AuditEvent: fan-out to 2 PDS<br/>(each request trimmed to that site's pseudonym)
 
-    par Broadcast
-        MQ->>CA: FHIR Message Bundle
-        MQ->>CB: FHIR Message Bundle
+    par Topic routing — each site receives ONLY its own pseudonym
+        MQ->>CA: FHIR Message Bundle (PSN-A only)
+        MQ->>CB: FHIR Message Bundle (PSN-B only)
     end
 
-    CA->>CA: gPAS domain PDS-A ✓ → handler
+    CA->>CA: gPAS domain PDS-A ✓ (self-filter, defense-in-depth) → handler
     Note over CA: AuditEvent: query start (OMOP CDM)
     CA->>CA: DB query → FHIR Conditions
     Note over CA: Create Provenance per Condition<br/>(agent=PDS-A, source=OMOP)

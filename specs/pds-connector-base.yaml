@@ -137,14 +137,17 @@ operations:
     action: send
     channel:
       $ref: "#/channels/pds.topic"
-    summary: Broker publishes the request Bundle to the addressed sites (topic exchange).
+    summary: Broker publishes a per-site request Bundle to each addressed site (topic exchange).
     description: >
       Target routing (ADR-006 rev.): the broker publishes the request once per
-      addressed site to pds.topic with routing key pds.{pdsId}.request. AMQP
+      addressed site to pds.topic with routing key pds.{pdsId}.request. Each
+      site's Bundle is trimmed to carry ONLY that site's pseudonym(s) (data
+      minimization — a site never sees another site's pseudonym); the
+      MessageHeader and non-pseudonym operation parameters are unchanged. AMQP
       properties: correlation-id = request MessageHeader.id; reply-to = the
       broker's response queue (responses.broker); delivery mode persistent.
-      In legacy fanout mode the same message is instead published once to
-      pds.broadcast.
+      In legacy fanout mode the same full Bundle (all pseudonyms) is instead
+      published once to pds.broadcast and connectors self-filter.
     bindings:
       amqp:
         deliveryMode: 2
@@ -156,9 +159,12 @@ operations:
       $ref: "#/channels/req.{pdsId}"
     summary: PDS connector receives the request Bundle from its queue.
     description: >
-      Connectors self-filter (broadcast + self-filtering): a connector that is
-      not addressed (no pseudonym of its gPAS domain) or does not support the
-      requested operation acknowledges silently and publishes no response.
+      Connectors self-filter by gPAS domain as defense-in-depth: in topic mode
+      the broker already trimmed the request to the site's own pseudonym(s), so
+      the filter is a no-op; in legacy fanout mode it is what isolates the
+      sites. A connector that is not addressed (no pseudonym of its gPAS domain)
+      or does not support the requested operation acknowledges silently and
+      publishes no response.
 
   publishConnectorResponse:
     action: send

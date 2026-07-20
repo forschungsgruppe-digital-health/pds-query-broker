@@ -66,7 +66,7 @@ graph TB
     BROKER -->|"FHIR REST"| CATALOG
     BROKER -->|"GET /metadata"| CAPSTMT
     BROKER -->|"Publish"| MQ
-    MQ -->|"Broadcast"| CONN
+    MQ -->|"Per-site (topic)"| CONN
     CONN -->|"Response"| MQ
     CONN --> LTHS --> SRC
     CONN -->|"FHIR REST"| CATALOG

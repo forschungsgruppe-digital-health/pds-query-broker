@@ -24,10 +24,12 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
 /**
- * Orchestrates one federated query: validates the request against the
- * catalog, fans it out on the broadcast exchange, aggregates the connector
- * responses, and publishes the aggregated bundle to the requesting system's
- * response queue (ADR-009).
+ * Orchestrates one federated query: validates the request against the catalog,
+ * routes it to the addressed sites — in the default topic mode each site
+ * receives a request bundle trimmed to only its own pseudonym(s) (ADR-006
+ * rev.); the legacy fanout mode broadcasts the full bundle and relies on
+ * connector self-filtering — aggregates the connector responses, and publishes
+ * the aggregated bundle to the requesting system's response queue (ADR-009).
  */
 @Service
 public class QueryBrokerService {
@@ -91,11 +93,13 @@ public class QueryBrokerService {
     aggregator.expect(correlationId, addressedSites.size());
     if (properties.routingMode() == BrokerProperties.RoutingMode.TOPIC) {
       // Route only to the addressed sites; unaddressed sites never receive it.
+      // Each site gets a request bundle trimmed to ONLY its own pseudonym(s)
+      // (ADR-006 rev., data minimization) — a site never sees another's pseudonym.
       for (String pdsId : addressedSites) {
         publish(
             BrokerProtocol.TOPIC_EXCHANGE,
             BrokerProtocol.requestRoutingKey(pdsId),
-            requestBundle,
+            BrokerMessages.requestBundleForSite(requestBundle, pdsId),
             correlationId,
             properties.replyQueue());
       }
