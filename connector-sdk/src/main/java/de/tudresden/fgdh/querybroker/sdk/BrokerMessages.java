@@ -53,6 +53,34 @@ public final class BrokerMessages {
   }
 
   /**
+   * Returns a DEEP COPY of {@code requestBundle} whose Parameters carry only the
+   * pseudonym(s) belonging to {@code pdsId} — matched via
+   * {@link BrokerProtocol#primaryDataSourceIdOf} on each pseudonym
+   * {@code Identifier.system}. All non-pseudonym operation parameters, the
+   * MessageHeader, and its {@code focus} reference are preserved unchanged.
+   *
+   * <p>Data minimization for topic routing (ADR-006 rev.): a primary data
+   * source never sees another site's pseudonym. The source bundle is never
+   * mutated — each addressed site gets its own copy. Malformed {@code pseudonym}
+   * parameters (non-Identifier value) are dropped (mirroring
+   * {@link #pseudonymsOf}), so they cannot leak to any site.
+   */
+  public static Bundle requestBundleForSite(Bundle requestBundle, String pdsId) {
+    Bundle copy = requestBundle.copy();
+    parametersOf(copy)
+        .ifPresent(
+            p ->
+                p.getParameter()
+                    .removeIf(
+                        pp ->
+                            "pseudonym".equals(pp.getName())
+                                && (!(pp.getValue() instanceof Identifier id)
+                                    || !pdsId.equals(
+                                        BrokerProtocol.primaryDataSourceIdOf(id.getSystem())))));
+    return copy;
+  }
+
+  /**
    * Builds a request message bundle (profile BrokerRequestBundle): MessageHeader
    * (no response element) + Parameters carrying pseudonyms and operation
    * parameters. {@code destinationEndpoint} is the requesting system's response

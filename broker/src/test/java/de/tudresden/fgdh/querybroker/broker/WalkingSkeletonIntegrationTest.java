@@ -188,6 +188,47 @@ class WalkingSkeletonIntegrationTest {
   }
 
   @Test
+  void eachAddressedSiteReceivesOnlyItsOwnPseudonym() throws Exception {
+    // Per-site pseudonym filtering (ADR-006 rev.): with BOTH sites addressed,
+    // each site's published request must carry ONLY its own pseudonym — a site
+    // never sees another site's pseudonym on the wire.
+    org.springframework.amqp.rabbit.core.RabbitAdmin admin =
+        brokerContext.getBean(org.springframework.amqp.rabbit.core.RabbitAdmin.class);
+    org.springframework.amqp.core.TopicExchange topic =
+        new org.springframework.amqp.core.TopicExchange("pds.topic", true, false);
+    String probeA = declareProbe(admin, topic, "probe.body.PDS-EXAMPLE", "pds.PDS-EXAMPLE.request");
+    String probeB =
+        declareProbe(admin, topic, "probe.body.PDS-EXAMPLE-B", "pds.PDS-EXAMPLE-B.request");
+
+    postProcessMessage(
+        request(
+            pseudonym("PSN-EXAMPLE-0001", EXAMPLE_DOMAIN),
+            pseudonym("PSN-B-0001", EXAMPLE_B_DOMAIN)),
+        200);
+
+    java.util.List<Identifier> receivedByA = pseudonymsFromProbe(probeA);
+    assertThat(receivedByA).extracting(Identifier::getValue).containsExactly("PSN-EXAMPLE-0001");
+    assertThat(receivedByA).extracting(Identifier::getSystem).containsExactly(EXAMPLE_DOMAIN);
+
+    java.util.List<Identifier> receivedByB = pseudonymsFromProbe(probeB);
+    assertThat(receivedByB).extracting(Identifier::getValue).containsExactly("PSN-B-0001");
+    assertThat(receivedByB).extracting(Identifier::getSystem).containsExactly(EXAMPLE_B_DOMAIN);
+  }
+
+  private static java.util.List<Identifier> pseudonymsFromProbe(String queue) {
+    org.springframework.amqp.rabbit.core.RabbitTemplate rabbit =
+        brokerContext.getBean(org.springframework.amqp.rabbit.core.RabbitTemplate.class);
+    org.springframework.amqp.core.Message received = rabbit.receive(queue, 5000);
+    assertThat(received).as("addressed site probe %s must receive its request", queue).isNotNull();
+    Bundle bundle =
+        (Bundle)
+            FHIR.newJsonParser()
+                .parseResource(
+                    new String(received.getBody(), java.nio.charset.StandardCharsets.UTF_8));
+    return BrokerMessages.pseudonymsOf(BrokerMessages.parametersOf(bundle).orElseThrow());
+  }
+
+  @Test
   void aggregatesConditionsFromAddressedConnector() throws Exception {
     // Unique response queue so the routed-delivery assertion below cannot
     // be satisfied by another test's message.
