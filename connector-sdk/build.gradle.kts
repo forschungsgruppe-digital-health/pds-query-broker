@@ -7,7 +7,7 @@ val hapiFhirVersion: String by project
 dependencies {
     api("ca.uhn.hapi.fhir:hapi-fhir-base:$hapiFhirVersion")
     api("ca.uhn.hapi.fhir:hapi-fhir-structures-r4:$hapiFhirVersion")
-    implementation("org.slf4j:slf4j-api:2.0.18")
+    implementation("org.slf4j:slf4j-api:2.0.19")
 
     // Runtime profile validation (CatalogProfileValidator). implementation scope:
     // available at runtime for connectors, not leaked onto their compile classpath.
@@ -17,7 +17,7 @@ dependencies {
     // Remote terminology server client (ADR-013)
     implementation("ca.uhn.hapi.fhir:hapi-fhir-client:$hapiFhirVersion")
 
-    testImplementation(platform("org.junit:junit-bom:6.1.2"))
+    testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.assertj:assertj-core:3.27.7")
