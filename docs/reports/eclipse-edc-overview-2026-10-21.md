@@ -7,7 +7,9 @@
 > Method: two parallel web-research passes against primary sources (EDC documentation site, GitHub source
 > on `main` and on the release tags, the DSP/DCP/DPS specifications, Maven Central, distribution and
 > adopter pages), followed by a spot re-verification of the decision-relevant claims (release list, removed
-> data-plane modules on `main`, DSP callback requirement, Tractus-X Kafka data plane).
+> data-plane modules on `main`, DSP callback requirement, Tractus-X Kafka data plane). History and roadmap
+> (§ 9) are based on GitHub API data (releases, tags, repository creation dates, milestones), the Eclipse
+> project proposal and the EDC blog.
 > Companion report: [eclipse-edc-fit-assessment-2026-10-21.md](eclipse-edc-fit-assessment-2026-10-21.md)
 > evaluates EDC against this repository's broker architecture.
 >
@@ -33,7 +35,11 @@
 - **Version caveat:** EDC is mid-way through a breaking transition. **1.0.0-RC5** (released 2026-10-21)
   removes the built-in data plane (adopters bring their own, via the new **Data Plane Signaling** spec and
   SDKs), removes Management API v3, and makes multi-tenancy ("EDC-V") first-class. Much of the public
-  documentation and almost all third-party material still describe the 0.x architecture (see § 9).
+  documentation and almost all third-party material still describe the 0.x architecture (see § 10).
+- **History and roadmap:** proposed in 2021 as "Eclipse Dataspace Connector" to implement IDS and Gaia-X
+  protocols; pivoted 2023–2025 to a protocol-first design (DSP replaces IDS messaging, DCP replaces central
+  DAPS identity); 2026 is a consolidation year towards 1.0. The only official roadmap is the "Path to v1"
+  plan — three of its four milestones are done in code; GA is pending without a date (see § 9).
 
 ## Table of contents
 
@@ -45,8 +51,9 @@
 6. [Architectural paradigms and styles](#6-architectural-paradigms-and-styles)
 7. [Configuration](#7-configuration)
 8. [Ecosystem, adoption and maturity](#8-ecosystem-adoption-and-maturity)
-9. [Reading the EDC documentation in late 2026](#9-reading-the-edc-documentation-in-late-2026)
-10. [Sources](#10-sources)
+9. [Development history and roadmap](#9-development-history-and-roadmap)
+10. [Reading the EDC documentation in late 2026](#10-reading-the-edc-documentation-in-late-2026)
+11. [Sources](#11-sources)
 
 ---
 
@@ -563,7 +570,126 @@ the relevant production precedent in German university medicine is DSF.
 
 ---
 
-## 9. Reading the EDC documentation in late 2026
+## 9. Development history and roadmap
+
+### 9.1 Phases at a glance
+
+| Phase | Period | Character |
+|-------|--------|-----------|
+| **1. IDS/Gaia-X connector** | 2021 – mid 2023 | Proposed as "Eclipse Dataspace Connector"; built around the IDS standard and Gaia-X protocols; pre-versioned milestone releases; the component family (IdentityHub, Federated Catalog, MVD, Samples) splits into separate repositories |
+| **2. Protocol-first pivot** | mid 2023 – 2024 | First semantic-versioned release (0.1.0); IDS messaging replaced by the **Dataspace Protocol**; central DAPS identity replaced by IATP (later **DCP**); Eclipse Dataspace Working Group founded; DSP moves from IDSA to Eclipse |
+| **3. Standards stabilization** | 2025 | DSP 2025-1 and DCP 1.0 final; ISO/IEC transposition starts; participant contexts lay the ground for multi-tenancy |
+| **4. Consolidation towards 1.0** | 2026 | Data Plane Signaling replaces the built-in data plane; EDC-V and Federated Catalog merged into the Connector; Management API v4/v5; release candidates 1.0.0-RC1 … RC5 |
+
+```mermaid
+timeline
+    title Eclipse Dataspace Components — development history
+    2021 : Proposal as Eclipse Dataspace Connector (May)
+         : Creation review passed (June)
+         : Connector repository created (July)
+    2022 : Milestone releases 4 to 7
+         : IdentityHub, Federated Catalog and MVD repositories
+    2023 : First versioned release 0.1.0 with Java 17 baseline (May)
+         : IDS modules removed in favour of the Dataspace Protocol
+         : Eclipse Dataspace Working Group launched (Dec)
+    2024 : IATP support, the later DCP (0.5.0, Jan)
+         : DSP 2024-1 published, DSP moves to Eclipse (June)
+         : DAPS deprecated (0.10.0, Oct)
+    2025 : DSP 2025-1 implemented (0.14.0, Aug)
+         : DSP 2025-1 and DCP 1.0 final (Aug)
+         : Participant contexts (0.15.0) and ISO/IEC transposition start (Dec)
+    2026 : Data plane framework deprecated (0.16.0, Feb)
+         : Path to v1 plan (Mar)
+         : Management API v4 stable, v5 beta (0.17.0, Apr)
+         : DPS default, EDC-V BOMs (0.18.0, June)
+         : 1.0.0-RC1 to RC5 (Sep to Oct)
+```
+
+### 9.2 Detailed timeline
+
+| Date | Event | Significance |
+|------|-------|--------------|
+| 2021-05-20 | Project proposal **"Eclipse Dataspace Connector (EDC)"**: a connector framework for "sovereign, inter-organizational data exchange"; initial contribution "Data Appliance GX" by Microsoft; to implement the IDS standard and relevant Gaia-X protocols ([proposal](https://projects.eclipse.org/node/22252)) | Origin in the IDS/Gaia-X context |
+| 2021-06-16 | Creation review successful | Eclipse project established |
+| 2021-07-26 | Connector repository created — originally `eclipse-dataspaceconnector/DataSpaceConnector`, today `eclipse-edc/Connector` (GitHub still redirects the old name) | The later name "Eclipse Dataspace Components" reflects the broader component family; the exact rename date was not found |
+| 2022-05 – 2022-11 | MVD (2022-05-24), IdentityHub and Federated Catalog (2022-06-02) and Samples (2022-11-10) get their own repositories; milestone releases 4–7 | Modular component family |
+| 2023-01 – 2023-05 | Milestones 8 and 9 | Last pre-versioned releases |
+| 2023-05-30 | **v0.1.0** — first semantic-versioned release: Java 17 baseline, deprecated IDS modules and Management API v1 removed, DSP implementation in place | Start of the protocol-first era |
+| 2023-12-07 | **Eclipse Dataspace Working Group** launched; founding members Amadeus, Fraunhofer, IDSA, iShare, Microsoft, T-Systems ([i-programmer](https://www.i-programmer.info/news/141-cloud-computing/16815-eclipse-launches-dataspace-working-group.html)) | Vendor-neutral governance for specs and implementations |
+| 2024-01-18 | **v0.5.0** — support for the Identity and Trust Protocol (IATP) | Decentralized identity enters the core |
+| 2024-02-26 | IATP specification 0.8.0 — later continued as the **Decentralized Claims Protocol (DCP)** | |
+| 2024-06-27 | **DSP 2024-1** published by IDSA ([ids-specification](https://github.com/International-Data-Spaces-Association/ids-specification/releases)); Eclipse Dataspace Protocol repository created | DSP moves from IDSA to Eclipse |
+| 2024-10-24 | **v0.10.0** — DSP 2024/1 namespace; OAuth2/DAPS identity deprecated | Central identity provider abandoned |
+| 2025-01-16 | v0.11.0 | |
+| 2025-02 | DSP 2025-1 RC1 (02-27), DCP v1.0 RC1/RC2 (02-21/02-27) | Specification hardening |
+| 2025-08-19 | **v0.14.0** — DSP 2025-1 implementation in the DSP BOM | |
+| 2025-08-29 | **DSP 2025-1** and **DCP v1.0** final | Stable protocol baseline |
+| 2025-12-02 | **v0.15.0** — participant contexts (multi-tenancy groundwork), DCP naming in modules; Eclipse Dataspace Working Group starts ISO/IEC PAS transposition of DSP and DCP ([Eclipse newsroom](https://newsroom.eclipse.org/news/announcements/eclipse-dataspace-working-group-edwg-advances-two-open-protocols-toward-global)) | Standardization beyond Eclipse |
+| 2026-01 | Data Plane Signaling announced (blog 2026-01-19); Connector Fabric Manager creation review (2026-01-21) | Data plane externalized; operator tooling |
+| 2026-02-19 | **v0.16.0** — Data Plane Framework deprecated, data addresses optional and stored in the vault, older DSP versions removed | |
+| 2026-03 | Federated Catalog merged into the Connector (repository archived); **"Path to v1"** plan published (2026-03-06) | Official roadmap |
+| 2026-04 | DPS v1.0-RC1 (04-03); **v0.17.0** (04-20) — Management API v4 stable, v3 deprecated, v5 beta; Virtual Connector APIs ported | |
+| 2026-05-07 | `eclipse-dataspace-hub` organization created; MVD moves there | Demonstrators separated from core |
+| 2026-06-30 | **v0.18.0** — DPS becomes the default; EDC-V BOMs; multi-profile support; events to NATS | |
+| 2026-07 | Virtual Connector (EDC-V) repository archived after merge into the Connector | |
+| 2026-08-27 | DPS v1.0-RC4 | |
+| 2026-09 | **v1.0.0-RC1** (09-07) — Data Plane Framework, Kafka data plane, EDR cache and Management API v3 removed; DSP 2025-1 errata 2 (09-11); IDSA reports DSP/DCP as ISO/IEC DIS 26450/26451; v0.18.1 (09-25) as last 0.x patch | Breaking cut towards 1.0 |
+| 2026-09-30 | Planned due date of the GitHub milestone "1.0.0" — missed | |
+| 2026-10-21 | **v1.0.0-RC5** | Current pre-release |
+
+Release cadence: roughly every two months with frequent patch releases in 2023–2024; every two to three
+months in 2025–2026. Since 0.15 every minor release and every release candidate lists breaking changes.
+
+### 9.3 Roadmap
+
+**There is no standing roadmap page.** The documentation site, the blog and the GitHub milestones
+(checked 2026-10-21) contain one official forward-looking plan: the blog post
+[The Path to Version 1](https://eclipse-edc.github.io/blog/2026/03/06/the-path-to-version-1-for-the-eclipse-dataspace-components/)
+(2026-03-06), backed by the GitHub milestone "1.0.0". Its four milestones and their status:
+
+| Path-to-v1 milestone | Status on 2026-10-21 |
+|----------------------|----------------------|
+| 1. Integrate **Data Plane Signaling** into the core | Done in code — default since 0.18.0, the only option since 1.0.0-RC1. The DPS specification itself is still at 1.0-RC4 |
+| 2. Make the **EDC-V** capabilities the default capability set | Merged — Virtual Connector repository archived, virtual BOMs on `main`; the classic single-participant BOM still exists alongside |
+| 3. **Management API v4 and v5**, both supported during a transition period | Done — both stable since RC1, v3 removed; the end of the transition period is not specified |
+| 4. Eclipse **maturity assessment** | In progress — no result published; the project is still *Incubating* |
+
+**Towards 1.0.0 GA:**
+
+- The GitHub milestone "1.0.0" (due 2026-09-30, missed) has 15 closed issues and **one open item:
+  "Multi-participant catalog cache"**.
+- The RC phase is meant for "early adopters, integration testing, and community feedback"; the release is
+  "not yet production-stable", further breaking changes are "expected to be minimal"
+  ([RC1 announcement](https://eclipse-edc.github.io/blog/2026/09/07/eclipse-dataspace-components-1.0.0-rc1-released/)).
+- **No GA date** has been announced.
+
+**After 1.0 (stated policy):**
+
+- 1.0 is **not an LTS release**; the existing release and deprecation policy (a 2024 decision record on
+  maturity levels and deprecation) continues — APIs and components may still change, deprecated features are
+  removed on the usual schedule.
+- Development continues iteratively in regular releases; feature proposals go through GitHub discussions and
+  the contribution guidelines. No post-1.0 feature list has been published.
+
+**Adjacent roadmaps** (outside the EDC core, but relevant for adopters):
+
+| Item | Status / expectation |
+|------|----------------------|
+| Data Plane Signaling 1.0 final | Pending (RC4 since 2026-08-27); no date |
+| DSP and DCP as ISO/IEC 26450 / 26451 | DIS ballot; publication "anticipated in late 2026" ([IDSA](https://internationaldataspaces.org/standardization-is-shaping-the-future-of-data-spaces/)) |
+| Next DSP version | None announced; open issues in the DSP repository are errata and editorial fixes |
+| Data Plane SDKs | Java 1.2.1 ("not production-ready"), Rust 0.1.x, Go without release, .NET archived |
+| Connector Fabric Manager | Incubating, v0.0.x — tooling for multi-tenant "connector-as-a-service" operation |
+| Tractus-X EDC | Restructuring into a dataspace-agnostic core with flavors; an EDC-V-based Catena-X release was announced for September 2026 ([IDSA, 2026-08-13](https://internationaldataspaces.org/edc-v-the-open-foundation-for-scalable-data-space-participation/); delivery not verified) |
+
+**Reading for this repository:** the roadmap confirms that the architectural churn of 2025–2026 is nearly
+complete, but that GA, the DPS specification and production-ready data-plane SDKs are still outstanding —
+which is why the companion [fit assessment](eclipse-edc-fit-assessment-2026-10-21.md) ties any spike to
+EDC 1.0 GA and DPS 1.0 final.
+
+---
+
+## 10. Reading the EDC documentation in late 2026
 
 When studying EDC further, keep these discrepancies in mind (checked 2026-10-21):
 
@@ -581,7 +707,7 @@ When studying EDC further, keep these discrepancies in mind (checked 2026-10-21)
 
 ---
 
-## 10. Sources
+## 11. Sources
 
 Primary sources (all accessed 2026-10-21):
 
@@ -596,6 +722,7 @@ Primary sources (all accessed 2026-10-21):
 | Data Plane SDKs | <https://github.com/eclipse-dataplane-core> |
 | Demonstrators | <https://github.com/eclipse-dataspace-hub/MinimumViableDataspace>, <https://github.com/eclipse-dataspace-hub/jad> |
 | Governance | <https://projects.eclipse.org/projects/technology.edc>, <https://projects.eclipse.org/projects/technology.cfm> |
+| History | [Project proposal (2021)](https://projects.eclipse.org/node/22252), [Connector releases and tags](https://github.com/eclipse-edc/Connector/releases), [Connector milestones](https://github.com/eclipse-edc/Connector/milestones), [DSP releases](https://github.com/eclipse-dataspace-protocol-base/DataspaceProtocol/releases), [DCP releases](https://github.com/eclipse-dataspace-dcp/decentralized-claims-protocol/releases), [DPS releases](https://github.com/eclipse-dataplane-signaling/dataplane-signaling/releases), [IDSA ids-specification releases](https://github.com/International-Data-Spaces-Association/ids-specification/releases), [Eclipse Dataspace Working Group launch](https://www.i-programmer.info/news/141-cloud-computing/16815-eclipse-launches-dataspace-working-group.html) |
 | Distributions | <https://github.com/eclipse-tractusx/tractusx-edc>, <https://github.com/sovity/edc-ce> |
 | Standardization | [IDSA on ISO/IEC DIS 26450/26451](https://internationaldataspaces.org/standardization-is-shaping-the-future-of-data-spaces/) |
 | Health adoption | See § 8.2 |
